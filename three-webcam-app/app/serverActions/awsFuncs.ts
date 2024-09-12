@@ -63,7 +63,7 @@ export const getFileUrl = (fileKey: string): string => {
   return url;
 };
 
-export const uploadImage = async (file: File, orgName: string, location = 'logo') => {  
+export const uploadImage = async (file: File, orgName: string, location = 'webcam') => {  
   const fileKey = `${location}/${orgName}-${uuidv4()}`;
   const fileType = file.type;
 
