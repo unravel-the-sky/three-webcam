@@ -6,60 +6,26 @@ import { getAwsDownloadUrl, getFileUrl, uploadImage, uploadPdf } from "./awsFunc
 
 export const submitForm = async (
     formData: FormData,
-    organisationId: string | undefined = undefined,
-    documentFileKey = ''
-  ): Promise<SubmittedFormData> => {
-    const rawFormData: SubmittedFormData = {
-      orgName: formData.get("orgName"),
-      orgEmail: formData.get("orgEmail"),
-      linkToOrg: formData.get("linkToOrg"),
-      orgLogo: "",
-      orgDocument: ''
+  ): Promise<any> => {
+    const rawFormData = {
+      username: formData.get("username"),
+      color: formData.get("color"),
+      image: formData.get("image"),
     };
 
-    // logo bit
-    const orgLogoRaw = formData.get("orgLogo");
-    const orgName = rawFormData.orgName as string
-  
-    if (typeof orgLogoRaw === 'string') {
-      rawFormData.orgLogo = orgLogoRaw
-    } else {
-        // now upload the image to s3 and get the download url
-        const image = orgLogoRaw as File;
-        const uploadedFileKey = await uploadImage(
-          image,
-          orgName,
-        );
-        if (uploadedFileKey) {
-          const url = await getFileUrl(uploadedFileKey); // file name here
-          if (url) rawFormData.orgLogo = url;
-        }
+    let avatar = null;
+
+    // now upload the image to s3 and get the download url
+    const image = rawFormData.image as File;
+    const username = rawFormData.username as string;
+    const uploadedFileKey = await uploadImage(
+      image,
+      username,
+    );
+    if (uploadedFileKey) {
+      const url = await getFileUrl(uploadedFileKey); // file name here
+      if (url) avatar = url;
     }
-  
-    // org document bit
-    const orgDocumentRaw = formData.get("orgDocument");
-    if (typeof orgDocumentRaw === 'string') {
-      rawFormData.orgDocument = orgDocumentRaw
-    } else if (orgDocumentRaw) {
-        documentFileKey = await uploadPdf(orgDocumentRaw, orgName) || ''
-          if (documentFileKey) {
-            const url = await getFileUrl(documentFileKey); // file name here
-            rawFormData.orgDocument = url;
-          }
-    }
-  
-    const organisationToCreate: OrganisationDto = {
-      name: rawFormData.orgName as string,
-      links: [
-        rawFormData.linkToOrg as string,
-        rawFormData.orgDocument as string
-      ],
-      image: rawFormData.orgLogo as string,
-      emails: [
-        rawFormData.orgEmail as string
-      ],
-      documentFileKey
-    };
   
     // if (organisationId) {
     //   await updateOrganisationById(organisationToCreate, organisationId)
@@ -67,7 +33,6 @@ export const submitForm = async (
     //   await addOrganisationToDb(organisationToCreate);
     // }
   
-    revalidatePath("/admin");
     revalidatePath('/')
   
     return rawFormData;
