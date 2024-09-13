@@ -7,10 +7,8 @@ import {
   ThreeElements,
   useLoader,
   Vector3,
-  Camera,
 } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
-import { TextureLoader } from "three/src/loaders/TextureLoader";
 
 export default function ShowTime({ imgList }: { imgList: string[] }) {
   return (
@@ -55,7 +53,7 @@ const PlayerBall = ({
   imgUrl: string;
   position: Vector3 | undefined;
 }) => {
-  const colorMap = useLoader(TextureLoader, imgUrl);
+  const colorMap = useLoader(THREE.TextureLoader, imgUrl);
 
   const meshRef = useRef<THREE.Mesh>(null!);
 

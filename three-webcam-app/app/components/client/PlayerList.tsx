@@ -52,7 +52,7 @@ export default function PlayerList() {
 
   return (
     <div className="flex flex-col gap-4 flex-1">
-      <div className="flex gap-4">
+      <div className="flex gap-4 ">
         <Button
           variant={isPolling ? "orange" : "default"}
           onClick={togglePolling}
@@ -60,7 +60,8 @@ export default function PlayerList() {
         >
           {buttonText}
         </Button>
-        <p>piu</p>
+
+        {isPolling && <p className="animate-ping duration-2000 text-sm">piu</p>}
       </div>
 
       {players && players.length > 0 && (
