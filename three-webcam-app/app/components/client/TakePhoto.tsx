@@ -32,27 +32,34 @@ export default function TakePhoto({ onNext }: { onNext: () => void }) {
   };
 
   return (
-    <div className="space-y-6">
-      {user.image ? (
-        <Image src={user.image} width={500} height={500} alt="image" />
+    <>
+      {showCam ? (
+        <Webcam onComplete={handleComplete} />
       ) : (
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 flex flex-col items-center justify-center">
-          <Camera className="w-12 h-12 text-gray-400 mb-4" />
+        <>
+          {" "}
+          {user.image ? (
+            <Image src={user.image} width={500} height={500} alt="image" />
+          ) : (
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 flex flex-col items-center justify-center">
+              <Camera className="w-12 h-12 text-gray-400 mb-4" />
 
-          <p className="text-sm text-gray-500">Your photo will appear here</p>
-        </div>
+              <p className="text-sm text-gray-500">
+                Your photo will appear here
+              </p>
+            </div>
+          )}
+          {user.image ? (
+            <Button onClick={handleContinue} className="w-full">
+              Continue
+            </Button>
+          ) : (
+            <Button onClick={handleTakePhoto} className="w-full">
+              Take a Photo
+            </Button>
+          )}
+        </>
       )}
-      {user.image ? (
-        <Button onClick={handleContinue} className="w-full">
-          Continue
-        </Button>
-      ) : (
-        <Button onClick={handleTakePhoto} className="w-full">
-          Take a Photo
-        </Button>
-      )}
-
-      {showCam && <Webcam onComplete={handleComplete} />}
-    </div>
+    </>
   );
 }

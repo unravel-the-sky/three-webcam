@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { LucideCamera } from "lucide-react";
 import Image from "next/image";
 import { useRef, useState } from "react";
 import { Camera, CameraType } from "react-camera-pro";
@@ -14,7 +15,7 @@ export default function Webcam({
   const [image, setImage] = useState<string | null>(null);
 
   return (
-    <div>
+    <>
       <Camera
         ref={camera}
         aspectRatio="cover"
@@ -29,9 +30,10 @@ export default function Webcam({
           canvas: "Canvas is not supported.",
         }}
       />
-      <div className="fixed bottom-4 z-10">
+      <div className="flex items-center justify-center fixed bottom-4 left-0 z-10 bg-opacity-60 bg-slate-200 h-[200px] w-[100vw]">
         <Button
           variant={"outline"}
+          className="rounded-full"
           onClick={() => {
             if (camera.current) {
               const photo = camera.current.takePhoto();
@@ -41,9 +43,9 @@ export default function Webcam({
             }
           }}
         >
-          Take photo
+          <LucideCamera />
         </Button>
       </div>
-    </div>
+    </>
   );
 }
