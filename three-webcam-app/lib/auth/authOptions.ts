@@ -45,7 +45,7 @@ export const authOptions: AuthOptions = {
     session({ session, token }) {
       if (token) {
         session.user.role = token?.role;
-        console.log("session is: ", session);
+        // console.log("session is: ", session);
       }
 
       return session;

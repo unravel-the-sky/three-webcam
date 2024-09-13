@@ -1,21 +1,20 @@
-import { Post, Prisma } from "@prisma/client";
+import { Player, Prisma } from "@prisma/client";
 import prisma from "../lib/prisma";
 
-export type PostDto = {
-    url: string,
-    description: string,
-    source: string
+export type PlayerDto = {
+    username: string,
+    color: string,
+    image: string
 }
-
-export const createPostInDb = async (postDto: PostDto, userId: string) => {
-    const {url, description, source} = postDto
+''
+export const createPlayerInDb = async (payload: PlayerDto): Promise<Player | undefined> => {
+    const {username, color, image} = payload
     try {
-        const res = await prisma.post.create({
+        const res = await prisma.player.create({
             data: {
-                url,
-                description,
-                source,
-                userId
+                username,
+                color,
+                image
             }
         })
         return res
@@ -26,19 +25,13 @@ export const createPostInDb = async (postDto: PostDto, userId: string) => {
         if (err instanceof Prisma.PrismaClientValidationError) {
             console.error('error happened in createPostInDb: ', err.message)
         }
+        throw new Error('poop happened')
     }
 }
 
-export const createManyPostsInDb = async (posts: Post[]) => {
-
-}
-
-export const gellAllPostsForUserInDb = async (userId: string) => {
+export const getAllPlayersInDb = async (): Promise<Player[] | undefined> => {
     try {
-        const res = await prisma.post.findMany({
-            where: {
-                userId
-            },
+        const res = await prisma.player.findMany({
             orderBy: {
                 createdAt: 'desc'
             }
@@ -51,20 +44,64 @@ export const gellAllPostsForUserInDb = async (userId: string) => {
     }
 }
 
-export const getUserByEmailInDb = async (email: string) => {
-    try {
-        const res = await prisma.user.findUnique({
-            where: {
-                email
-            }
-        })
-        return res
-    } catch(err) {
-        if (err instanceof Prisma.PrismaClientKnownRequestError) {
-            console.error('error happened in createPostInDb: ', err.message)
-        }
-        if (err instanceof Prisma.PrismaClientValidationError) {
-            console.error('error happened in createPostInDb: ', err.message)
-        }
-    }
-}
+// export const createPostInDb = async (postDto: PostDto, userId: string) => {
+//     const {url, description, source} = postDto
+//     try {
+//         const res = await prisma.post.create({
+//             data: {
+//                 url,
+//                 description,
+//                 source,
+//                 userId
+//             }
+//         })
+//         return res
+//     } catch(err) {
+//         if (err instanceof Prisma.PrismaClientKnownRequestError) {
+//             console.error('error happened in createPostInDb: ', err.message)
+//         }
+//         if (err instanceof Prisma.PrismaClientValidationError) {
+//             console.error('error happened in createPostInDb: ', err.message)
+//         }
+//     }
+// }
+
+// export const createManyPostsInDb = async (posts: Post[]) => {
+
+// }
+
+// export const gellAllPostsForUserInDb = async (userId: string) => {
+//     try {
+//         const res = await prisma.post.findMany({
+//             where: {
+//                 userId
+//             },
+//             orderBy: {
+//                 createdAt: 'desc'
+//             }
+//         })
+//         return res
+//     } catch(err) {
+//         if (err instanceof Prisma.PrismaClientKnownRequestError) {
+//             console.error('error happened in gellAllPostsInDb: ', err.message)
+//         }
+//     }
+// }
+
+// export const getUserByEmailInDb = async (email: string) => {
+//     try {
+//         const res = await prisma.user.findUnique({
+//             where: {
+//                 email
+//             }
+//         })
+//         return res
+//     } catch(err) {
+//         if (err instanceof Prisma.PrismaClientKnownRequestError) {
+//             console.error('error happened in createPostInDb: ', err.message)
+//         }
+//         if (err instanceof Prisma.PrismaClientValidationError) {
+//             console.error('error happened in createPostInDb: ', err.message)
+//         }
+//     }
+// }
