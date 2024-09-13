@@ -16,7 +16,6 @@ export default async function AdminPage({
     <main className="flex h-[100vh] flex-col gap-4 p-4 lg:gap-6 lg:p-6">
       <div>Admin panel</div>
       <PlayerList />
-      {/* <ShowTime /> */}
     </main>
   );
 }

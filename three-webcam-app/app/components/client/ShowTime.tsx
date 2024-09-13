@@ -32,10 +32,16 @@ interface ShowTimeProps {
 
 export default function ShowTime({ imgList }: ShowTimeProps) {
   return (
-    <div className="flex-1 bg-slate-200">
+    <div className="flex-1 bg-slate-200 h-full">
       <Canvas
-        camera={{ fov: 45, near: 0.1, far: 100, position: [0, 0, 10] }}
-        className="h-[500px]"
+        camera={{
+          fov: 45,
+          near: 0.1,
+          far: 100,
+          position: [0, 0, 15],
+          rotation: [0, Math.PI * 0.5, 0],
+        }}
+        className="h-full"
       >
         <Scene imgList={imgList} />
         <OrbitControls />
@@ -110,6 +116,7 @@ const PhyBox = (props: PhyBoxProps) => {
     ...props,
   }));
   const colorMap = useTexture(props.imgUrl) as THREE.Texture;
+  colorMap.colorSpace = THREE.SRGBColorSpace;
 
   return (
     <Box
@@ -122,11 +129,7 @@ const PhyBox = (props: PhyBoxProps) => {
         );
       }}
     >
-      {colorMap ? (
-        <meshStandardMaterial map={colorMap} />
-      ) : (
-        <meshNormalMaterial />
-      )}
+      {colorMap ? <meshBasicMaterial map={colorMap} /> : <meshNormalMaterial />}
     </Box>
   );
 };
@@ -153,7 +156,7 @@ const Scene = ({ imgList }: ShowTimeProps) => {
           />
         ))}
       </Physics>
-      <ambientLight intensity={0.6} />
+      <ambientLight intensity={1} />
       <directionalLight />
     </>
   );
