@@ -24,13 +24,31 @@ import {
   useSphere,
   Triplet,
 } from "@react-three/cannon";
+import { Button } from "@/components/ui/button";
+import { useControls } from "leva";
 
 // Type for Props
 interface ShowTimeProps {
   imgList: string[];
+  // newItems: string[];
 }
 
 export default function ShowTime({ imgList }: ShowTimeProps) {
+  // const [list, setList] = useState(imgList);
+  // const handleClick = () => {
+  //   const temp = [...list, ...[list[0]]];
+  //   setList(temp);
+  // };
+
+  const cameraEl = useControls("Camera", {
+    position: {
+      x: 0,
+      y: 0,
+      z: 15,
+    },
+    castShadow: true,
+  });
+
   return (
     <div className="flex-1 bg-slate-200 h-full">
       <Canvas
@@ -38,14 +56,19 @@ export default function ShowTime({ imgList }: ShowTimeProps) {
           fov: 45,
           near: 0.1,
           far: 100,
-          position: [0, 0, 15],
+          position: [0, 25, 15],
           rotation: [0, Math.PI * 0.5, 0],
         }}
         className="h-full"
+        shadows
       >
+        <Lights />
         <Scene imgList={imgList} />
         <OrbitControls />
       </Canvas>
+      {/* <Button variant={"default"} onClick={handleClick}>
+        add item
+      </Button> */}
     </div>
   );
 }
@@ -61,7 +84,7 @@ const PhyPlane = ({ color, ...props }: PhyPlaneProps) => {
   const [ref] = usePlane<THREE.Mesh>(() => ({ ...props }));
 
   return (
-    <Plane args={[1000, 1000]} ref={ref}>
+    <Plane args={[1000, 1000]} ref={ref} receiveShadow>
       <meshStandardMaterial color={color} />
     </Plane>
   );
@@ -128,6 +151,8 @@ const PhyBox = (props: PhyBoxProps) => {
           [0, -1, 0]
         );
       }}
+      receiveShadow
+      castShadow
     >
       {colorMap ? <meshBasicMaterial map={colorMap} /> : <meshNormalMaterial />}
     </Box>
@@ -144,10 +169,10 @@ const Scene = ({ imgList }: ShowTimeProps) => {
           position={[0, -2, 4]}
           rotation={[-Math.PI / 2, 0, 0]}
         />
-        {imgList.map((imgUrl) => (
+        {imgList.map((imgUrl, index) => (
           <PhyBox
             imgUrl={imgUrl}
-            key={imgUrl}
+            key={index}
             position={[
               (Math.random() - 0.5) * 20,
               Math.random() * 40,
@@ -158,6 +183,76 @@ const Scene = ({ imgList }: ShowTimeProps) => {
       </Physics>
       <ambientLight intensity={1} />
       <directionalLight />
+    </>
+  );
+};
+
+const Lights = () => {
+  const ambientCtl = useControls("Ambient Light", {
+    visible: false,
+    intensity: {
+      value: 1.0,
+      min: 0,
+      max: 1.0,
+      step: 0.1,
+    },
+  });
+
+  const directionalCtl = useControls("Directional Light", {
+    visible: true,
+    position: {
+      x: 9.3,
+      y: 7.0,
+      z: 1.4,
+    },
+    castShadow: true,
+  });
+
+  const pointCtl = useControls("Point Light", {
+    visible: false,
+    position: {
+      x: 2,
+      y: 0,
+      z: 0,
+    },
+    castShadow: true,
+  });
+
+  const spotCtl = useControls("Spot Light", {
+    visible: false,
+    position: {
+      x: 3,
+      y: 2.5,
+      z: 1,
+    },
+    castShadow: true,
+  });
+
+  return (
+    <>
+      <directionalLight
+        visible={directionalCtl.visible}
+        position={[
+          directionalCtl.position.x,
+          directionalCtl.position.y,
+          directionalCtl.position.z,
+        ]}
+        castShadow={directionalCtl.castShadow}
+      />
+      <pointLight
+        visible={pointCtl.visible}
+        position={[
+          pointCtl.position.x,
+          pointCtl.position.y,
+          pointCtl.position.z,
+        ]}
+        castShadow={pointCtl.castShadow}
+      />
+      <spotLight
+        visible={spotCtl.visible}
+        position={[spotCtl.position.x, spotCtl.position.y, spotCtl.position.z]}
+        castShadow={spotCtl.castShadow}
+      />
     </>
   );
 };

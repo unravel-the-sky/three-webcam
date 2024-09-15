@@ -1,34 +1,26 @@
 'use server'
 
-import { getAllPlayersInDb } from "@/prisma/databaseActions"
+import { getAllPlayersInDb, pollAllPlayersInDb } from "@/prisma/databaseActions"
+import { Player } from "@prisma/client";
 
 export const getAllPlayers = async () => {
     const res = await getAllPlayersInDb();
     return res;
 }
 
-// const BASE_URL = 'https://localhost:7280/'; // best practice er å bruke sånn baseUrl og du kan utvide det i hver api method
-// const accessToken = '' // hent det fra session eller cookie
-
-// export const getStuff = async (accessToken: string) => {
-//     try {
-//         const res = await fetch(`${BASE_URL}api/Utenriksstasjon`, {
-//             credentials: 'include',
-//             headers: {
-//                 Authorization: `Bearer ${accessToken}`,
-//             }
-//         })
-//         const result = await res.json() as RETURN_OBJECT_TYPE_HERE;
-//         if (result) {
-//             const multiselectStasjonValg: OptionType[] = result.map(
-//                 (item: SelectType, index: Number) => ({
-//                     label: item.visningsnavn,
-//                     value: item.kode,
-//                 })
-//             );
-//             return multiselectStasjonValg;
-//         }
-//     } catch(err){
-//         console.error("Error fetching data:", err);
-//     }
-// }
+export const pollAllPlayers = async (lastFetchDate: number) => {
+    const res = await pollAllPlayersInDb(lastFetchDate)
+    // const res = await getAllPlayersInDb()
+    // if (res) {
+    //     const temp: Player = {
+    //         color: res[0].color,
+    //         id: res[0].id,
+    //         createdAt: res[0].createdAt,
+    //         image: res[0].image,
+    //         isOnline: res[0].isOnline,
+    //         username: res[0].username,
+    //     }
+    //     return [temp]
+    // }
+    return res;
+}

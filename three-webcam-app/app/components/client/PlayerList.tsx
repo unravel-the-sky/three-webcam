@@ -1,6 +1,6 @@
 "use client";
 
-import { getAllPlayers } from "@/app/serverActions/player";
+import { getAllPlayers, pollAllPlayers } from "@/app/serverActions/player";
 import { Button } from "@/components/ui/button";
 import { Player } from "@prisma/client";
 import Image from "next/image";
@@ -24,11 +24,21 @@ export default function PlayerList() {
   useEffect(() => {
     let interval = undefined;
 
+    // new Date(players[players.length - 1][0].createdAt).getTime()
+
     if (isPolling) {
       interval = setInterval(async () => {
-        const res = await getAllPlayers();
-        if (res) {
-          setPlayers(res);
+        // setPlayers([...players, ...[players[0]]]);
+
+        const lastFetchTime = new Date(
+          players[players.length - 1].createdAt
+        ).getTime();
+        const res = await pollAllPlayers(lastFetchTime);
+
+        if (res && res.length > 0) {
+          // new player is added
+          console.log("new player: ", res);
+          setPlayers([...players, ...res]);
         }
         console.log("im polling!");
       }, 1000); // Poll every 1 second
@@ -38,7 +48,7 @@ export default function PlayerList() {
     return () => {
       clearInterval(interval);
     };
-  }, [isPolling]);
+  }, [isPolling, players]);
 
   const buttonText = isPolling ? "stop polling" : "start polling";
 
@@ -50,11 +60,19 @@ export default function PlayerList() {
     setShowTime(!showTime);
   };
 
+  const handleClick = () => {
+    const temp = [...players, ...[players[0]]];
+    setPlayers(temp);
+  };
+
   return (
     <>
       {showTime && (
         <div className="fixed w-full left-0 top-0 h-full bg-gray-600 p-4">
           <ShowTime imgList={players.map((player) => player.image)} />
+          <Button variant={"default"} onClick={handleClick}>
+            add new
+          </Button>
         </div>
       )}
 
