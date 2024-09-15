@@ -11,10 +11,10 @@ export const metadata: Metadata = {
   description: "",
 };
 
-const cormorant = Cormorant({
-  subsets: ["latin"],
-  display: "swap",
-});
+// const cormorant = Cormorant({
+//   subsets: ["latin"],
+//   display: "swap",
+// });
 
 export default function RootLayout({
   children,
@@ -23,8 +23,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      ></meta>
       <body
-        className={`${cormorant.className} bg-mainBgColor min-h-screen h-[calc(100dvh) flex flex-col justify-center w-full`}
+        className={`${inter.className} bg-mainBgColor h-[calc(100dvh)] flex flex-col justify-center w-full`}
       >
         <Providers>
           <main className="flex flex-col items-center justify-center h-full w-full">

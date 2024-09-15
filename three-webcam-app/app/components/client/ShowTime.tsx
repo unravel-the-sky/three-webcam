@@ -123,6 +123,10 @@ const PhyBox = (props: PhyBoxProps) => {
 
   const { data } = usePlayerStore();
 
+  const showTexture = useControls("Show texture", {
+    val: true,
+  });
+
   useEffect(() => {
     if (data && data.imgList.length > 0) {
       if (data.imgList.includes(props.id)) {
@@ -146,8 +150,11 @@ const PhyBox = (props: PhyBoxProps) => {
       receiveShadow
       castShadow
     >
-      {/* <meshNormalMaterial /> */}
-      {colorMap && <meshPhongMaterial map={colorMap} />}
+      {showTexture.val ? (
+        <meshPhongMaterial map={colorMap} />
+      ) : (
+        <meshNormalMaterial />
+      )}
     </Box>
   );
 };

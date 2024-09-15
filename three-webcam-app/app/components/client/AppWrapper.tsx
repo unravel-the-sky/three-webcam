@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import SplashScreen from "./SplashScreen";
 import TakePhoto from "./TakePhoto";
 import useUserStore from "@/app/store/userStore";
@@ -27,6 +27,7 @@ const dataURIToBlob = (dataURI: string) => {
 
 export default function AppWrapper() {
   const [step, setStep] = useState(1);
+  const [userId, setUserId] = useState("");
 
   const userStore = useUserStore();
   const { user } = userStore;
@@ -36,6 +37,13 @@ export default function AppWrapper() {
   };
 
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    const val = localStorage.getItem("userId");
+    if (val) {
+      setUserId(val);
+    }
+  }, []);
 
   const handleUpload = async () => {
     if (user.image) {
@@ -58,15 +66,13 @@ export default function AppWrapper() {
 
   const handleJumpPlayer = () => {
     // lets try
-    startTransition(async () => {
-      const id = localStorage.getItem("userId");
-      if (id) {
-        setTimeout(() => {
-          jumpPlayerById(id, false);
-        }, 2000);
-        jumpPlayerById(id, true);
-      }
-    });
+    const id = localStorage.getItem("userId");
+    if (id) {
+      setTimeout(() => {
+        jumpPlayerById(id, false);
+      }, 500);
+      jumpPlayerById(id, true);
+    }
   };
 
   return (
@@ -82,20 +88,23 @@ export default function AppWrapper() {
               </h1>
             )}
 
-            {localStorage && localStorage.getItem("userId") && (
-              <div>
-                <Button variant={"blue"} onClick={handleJumpPlayer}>
-                  Jump
-                </Button>
-              </div>
-            )}
-
             {step === 1 && <SplashScreen onNext={handleNext} />}
             {step === 2 && <TakePhoto onNext={handleNext} />}
             {step === 3 && <Confirm onConfirm={handleUpload} />}
           </>
         )}
       </div>
+      {userId && (
+        <div className="mt-12">
+          <Button
+            variant={"blue"}
+            onClick={handleJumpPlayer}
+            className="rounded-[50%] px-4 py-10 shadow-lg text-lg"
+          >
+            Jump
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
