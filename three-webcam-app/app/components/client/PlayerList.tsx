@@ -56,7 +56,7 @@ export default function PlayerList() {
           setData({ imgList: jumpersIdList });
         }
         console.log("im polling!");
-      }, 500); // Poll every 1 second
+      }, 1000); // Poll every 1 second
     }
 
     // Cleanup the interval when component unmounts or polling stops
@@ -97,7 +97,7 @@ export default function PlayerList() {
           </Button>
 
           {isPolling && (
-            <p className="animate-ping duration-500 text-sm">piu</p>
+            <p className="animate-ping duration-1000 text-sm">piu</p>
           )}
 
           {showTime && (
