@@ -38,7 +38,7 @@ export default function PlayerList() {
         if (res && res.length > 0) {
           // new player is added
           console.log("new player: ", res);
-          setPlayers([...players, ...res]);
+          setPlayers((players) => [...players, ...res]);
         }
         console.log("im polling!");
       }, 1000); // Poll every 1 second
