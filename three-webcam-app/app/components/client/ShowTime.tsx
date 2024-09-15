@@ -1,44 +1,22 @@
 "use client";
 
-import * as THREE from "three";
-import {
-  Canvas,
-  useFrame,
-  ThreeElements,
-  useLoader,
-  Vector3 as FiberVector3,
-} from "@react-three/fiber";
-import { useEffect, useRef, useState } from "react";
-import {
-  Box,
-  OrbitControls,
-  Plane,
-  Sphere,
-  useTexture,
-} from "@react-three/drei";
-import {
-  Physics,
-  Debug,
-  useBox,
-  usePlane,
-  useSphere,
-  Triplet,
-} from "@react-three/cannon";
-import { Button } from "@/components/ui/button";
+import usePlayerStore from "@/app/store/playerStore";
+import { Player } from "@prisma/client";
+import { Physics, Triplet, useBox, usePlane } from "@react-three/cannon";
+import { Box, OrbitControls, Plane } from "@react-three/drei";
+import { Canvas } from "@react-three/fiber";
 import { useControls } from "leva";
+import { useEffect, useMemo } from "react";
+import * as THREE from "three";
 
-// Type for Props
 interface ShowTimeProps {
-  imgList: string[];
-  // newItems: string[];
+  players: Player[];
 }
 
-export default function ShowTime({ imgList }: ShowTimeProps) {
-  // const [list, setList] = useState(imgList);
-  // const handleClick = () => {
-  //   const temp = [...list, ...[list[0]]];
-  //   setList(temp);
-  // };
+export default function ShowTime({ players }: ShowTimeProps) {
+  const data = useMemo(() => {
+    return players.map((player) => ({ imageUrl: player.image, id: player.id }));
+  }, [players]);
 
   return (
     <div className="flex-1 bg-slate-200 h-full">
@@ -54,15 +32,60 @@ export default function ShowTime({ imgList }: ShowTimeProps) {
         shadows
       >
         <Lights />
-        <Scene imgList={imgList} />
+        <Scene data={data} />
         <OrbitControls />
       </Canvas>
-      {/* <Button variant={"default"} onClick={handleClick}>
-        add item
-      </Button> */}
     </div>
   );
 }
+
+// Scene component
+// const radius = 12;
+// const totalCount = 20;
+const Scene = ({
+  data,
+}: {
+  data: {
+    imageUrl: string;
+    id: string;
+  }[];
+}) => {
+  const radius = useControls("Shape radius", {
+    val: 12,
+  });
+  const totalCount = useControls("Total number", {
+    val: 20,
+  });
+
+  return (
+    <>
+      <Physics gravity={[0, -10, 0]} allowSleep>
+        <PhyPlane
+          color="yellow"
+          position={[0, -2, 4]}
+          rotation={[-Math.PI / 2, 0, 0]}
+        />
+        {data.map(({ imageUrl, id }, index) => (
+          <PhyBox
+            imgUrl={imageUrl}
+            id={id}
+            key={id}
+            position={[
+              radius.val * Math.cos((index / totalCount.val) * Math.PI * 2),
+              Math.random() * 40,
+              radius.val * Math.sin((index / totalCount.val) * Math.PI * 2),
+              // (Math.random() - 0.5) * 20,
+              // Math.random() * 40,
+              // (Math.random() - 0.5) * 10,
+            ]}
+          />
+        ))}
+      </Physics>
+      <ambientLight intensity={1} />
+      <directionalLight />
+    </>
+  );
+};
 
 // PhyPlane component
 interface PhyPlaneProps {
@@ -81,46 +104,12 @@ const PhyPlane = ({ color, ...props }: PhyPlaneProps) => {
   );
 };
 
-// PhySphere component
-interface PhySphereProps {
-  imgUrl: string;
-  position?: Triplet;
-}
-
-const PhySphere = (props: PhySphereProps) => {
-  const sphereSize = 1;
-  const [ref, api] = useSphere<THREE.Mesh>(() => ({
-    args: [sphereSize],
-    mass: 2,
-    ...props,
-  }));
-  const colorMap = useTexture(props.imgUrl) as THREE.Texture;
-
-  return (
-    <Sphere
-      args={[sphereSize]}
-      ref={ref}
-      onClick={() => {
-        api.applyImpulse(
-          [(Math.random() - 0.5) * 4, Math.random() * 20, 0],
-          [0, 0, 0]
-        );
-      }}
-      rotation={[0, Math.PI * 1.5, 0]}
-    >
-      {colorMap ? (
-        <meshStandardMaterial map={colorMap} />
-      ) : (
-        <meshNormalMaterial />
-      )}
-    </Sphere>
-  );
-};
-
 // PhyBox component
 interface PhyBoxProps {
   imgUrl: string;
   position?: Triplet;
+  colorMap?: any;
+  id: string;
 }
 
 const PhyBox = (props: PhyBoxProps) => {
@@ -129,8 +118,19 @@ const PhyBox = (props: PhyBoxProps) => {
     mass: 1,
     ...props,
   }));
-  const colorMap = useTexture(props.imgUrl) as THREE.Texture;
+  const colorMap = new THREE.TextureLoader().load(props.imgUrl);
   colorMap.colorSpace = THREE.SRGBColorSpace;
+
+  const { data } = usePlayerStore();
+
+  useEffect(() => {
+    if (data && data.imgList.length > 0) {
+      if (data.imgList.includes(props.id)) {
+        console.log("yello i shall jump! id: ", props.id);
+        api.applyImpulse([0, Math.random() * 10, 0], [0, -1, 0]);
+      }
+    }
+  }, [api, data, props.id]);
 
   return (
     <Box
@@ -138,57 +138,21 @@ const PhyBox = (props: PhyBoxProps) => {
       ref={ref}
       onClick={() => {
         api.applyImpulse(
-          [(Math.random() - 0.5) * 4, Math.random() * 20, 0],
+          // [(Math.random() - 0.5) * 4, Math.random() * 10, 0],
+          [0, Math.random() * 10, 0],
           [0, -1, 0]
         );
       }}
       receiveShadow
       castShadow
     >
-      {colorMap ? <meshBasicMaterial map={colorMap} /> : <meshNormalMaterial />}
+      {/* <meshNormalMaterial /> */}
+      {colorMap && <meshPhongMaterial map={colorMap} />}
     </Box>
   );
 };
 
-// Scene component
-const Scene = ({ imgList }: ShowTimeProps) => {
-  return (
-    <>
-      <Physics gravity={[0, -10, 0]} allowSleep>
-        <PhyPlane
-          color="yellow"
-          position={[0, -2, 4]}
-          rotation={[-Math.PI / 2, 0, 0]}
-        />
-        {imgList.map((imgUrl, index) => (
-          <PhyBox
-            imgUrl={imgUrl}
-            key={index}
-            position={[
-              (Math.random() - 0.5) * 20,
-              Math.random() * 40,
-              (Math.random() - 0.5) * 10,
-            ]}
-          />
-        ))}
-      </Physics>
-      <ambientLight intensity={1} />
-      <directionalLight />
-    </>
-  );
-};
-
 const Lights = () => {
-  // const ambientCtl = useControls("Ambient Light", {
-  //   visible: false,
-  //   intensity: {
-  //     value: 1.0,
-  //     min: 0,
-  //     max: 1.0,
-  //     step: 0.1,
-  //   },
-  // });
-
   const directionalCtl = useControls("Directional Light", {
     visible: true,
     position: {
@@ -199,25 +163,15 @@ const Lights = () => {
     castShadow: true,
   });
 
-  // const pointCtl = useControls("Point Light", {
-  //   visible: false,
-  //   position: {
-  //     x: 2,
-  //     y: 0,
-  //     z: 0,
-  //   },
-  //   castShadow: true,
-  // });
-
-  // const spotCtl = useControls("Spot Light", {
-  //   visible: false,
-  //   position: {
-  //     x: 3,
-  //     y: 2.5,
-  //     z: 1,
-  //   },
-  //   castShadow: true,
-  // });
+  const spotCtl = useControls("Spot Light", {
+    visible: false,
+    position: {
+      x: 3,
+      y: 2.5,
+      z: 1,
+    },
+    castShadow: true,
+  });
 
   return (
     <>
@@ -230,82 +184,13 @@ const Lights = () => {
         ]}
         castShadow={directionalCtl.castShadow}
       />
-      {/* <pointLight
-        visible={pointCtl.visible}
-        position={[
-          pointCtl.position.x,
-          pointCtl.position.y,
-          pointCtl.position.z,
-        ]}
-        castShadow={pointCtl.castShadow}
-      />
       <spotLight
         visible={spotCtl.visible}
         position={[spotCtl.position.x, spotCtl.position.y, spotCtl.position.z]}
         castShadow={spotCtl.castShadow}
-      /> */}
+      />
     </>
   );
 };
 
 // PlayerBall component
-interface PlayerBallProps {
-  imgUrl: string;
-  position: FiberVector3 | undefined;
-}
-
-const PlayerBall = ({ imgUrl, position }: PlayerBallProps) => {
-  const colorMap = useLoader(THREE.TextureLoader, imgUrl);
-  const meshRef = useRef<THREE.Mesh>(null!);
-
-  useEffect(() => {
-    if (meshRef.current) meshRef.current.rotation.y = Math.PI * 1.5;
-  }, []);
-
-  return (
-    <mesh ref={meshRef} position={position}>
-      <sphereGeometry args={[1, 32, 32]} />
-      <meshStandardMaterial map={colorMap} />
-    </mesh>
-  );
-};
-
-// TestScene component
-const TestScene = () => {
-  return (
-    <Canvas className="h-2xl w-2xl">
-      <ambientLight intensity={Math.PI / 2} />
-      <spotLight
-        position={[10, 10, 10]}
-        angle={0.15}
-        penumbra={1}
-        decay={0}
-        intensity={Math.PI}
-      />
-      <pointLight position={[-10, -10, -10]} decay={0} intensity={Math.PI} />
-      <CustomBox position={[-1.2, 0, 0]} />
-      <CustomBox position={[1.2, 0, 0]} />
-    </Canvas>
-  );
-};
-
-// CustomBox component
-const CustomBox = (props: ThreeElements["mesh"]) => {
-  const meshRef = useRef<THREE.Mesh>(null!);
-  const [hovered, setHover] = useState(false);
-  const [active, setActive] = useState(false);
-  useFrame((state, delta) => (meshRef.current.rotation.x += delta));
-  return (
-    <mesh
-      {...props}
-      ref={meshRef}
-      scale={active ? 1.5 : 1}
-      onClick={() => setActive(!active)}
-      onPointerOver={() => setHover(true)}
-      onPointerOut={() => setHover(false)}
-    >
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color={hovered ? "hotpink" : "#2f74c0"} />
-    </mesh>
-  );
-};

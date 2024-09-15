@@ -24,7 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${cormorant.className} bg-mainBgColor min-h-screen flex flex-col justify-center w-full`}
+        className={`${cormorant.className} bg-mainBgColor min-h-screen h-[calc(100dvh) flex flex-col justify-center w-full`}
       >
         <Providers>
           <main className="flex flex-col items-center justify-center h-full w-full">

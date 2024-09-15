@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import Confirm from "./Confirm";
 import { submitForm } from "@/app/serverActions/fileUpload";
 import Image from "next/image";
+import { Player } from "@prisma/client";
+import { jumpPlayerById } from "@/app/serverActions/player";
 
 const dataURIToBlob = (dataURI: string) => {
   const splitDataURI = dataURI.split(",");
@@ -45,28 +47,30 @@ export default function AppWrapper() {
       formData.append("image", imageAsFile);
 
       startTransition(async () => {
-        const res = await submitForm(formData);
+        const res = (await submitForm(formData)) as Player | undefined;
         if (res) {
+          localStorage.set("userId", res.id);
           alert("success!");
         }
       });
     }
   };
 
-  // const imageSrc = new URL(imageUrl).toString();
+  const handleJumpPlayer = () => {
+    // lets try
+    startTransition(async () => {
+      const id = localStorage.getItem("userId");
+      if (id) {
+        setTimeout(() => {
+          jumpPlayerById(id, false);
+        }, 2000);
+        jumpPlayerById(id, true);
+      }
+    });
+  };
 
   return (
-    <div className="flex items-center justify-center flex-col gap-2">
-      {/* <div>
-        hi mom
-        <Image
-          src={imageSrc}
-          alt="img"
-          className="object-cover h-full"
-          width={150}
-          height={100}
-        />
-      </div> */}
+    <div className="flex items-center justify-center flex-col gap-2 overflow-y-hidden">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full">
         {isPending ? (
           <div>loading..</div>
@@ -76,6 +80,14 @@ export default function AppWrapper() {
               <h1 className="text-2xl font-bold mb-6 text-center">
                 Hey, {user.username}
               </h1>
+            )}
+
+            {localStorage && localStorage.getItem("userId") && (
+              <div>
+                <Button variant={"blue"} onClick={handleJumpPlayer}>
+                  Jump
+                </Button>
+              </div>
             )}
 
             {step === 1 && <SplashScreen onNext={handleNext} />}

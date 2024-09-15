@@ -1,6 +1,11 @@
 "use client";
 
-import { getAllPlayers, pollAllPlayers } from "@/app/serverActions/player";
+import {
+  getAllPlayers,
+  getJumpingPlayers,
+  pollAllPlayers,
+} from "@/app/serverActions/player";
+import usePlayerStore from "@/app/store/playerStore";
 import { Button } from "@/components/ui/button";
 import { Player } from "@prisma/client";
 import Image from "next/image";
@@ -13,10 +18,16 @@ export default function PlayerList() {
 
   const [showTime, setShowTime] = useState(false);
 
+  const [currentTime, setCurrentTime] = useState(0);
+
+  const { setData, data } = usePlayerStore();
+
   useEffect(() => {
     getAllPlayers().then((res) => {
       if (res) {
         setPlayers(res);
+        // const imgList = res.map((player) => player.image);
+        // setData({ imgList });
       }
     });
   }, []);
@@ -24,21 +35,25 @@ export default function PlayerList() {
   useEffect(() => {
     let interval = undefined;
 
-    // new Date(players[players.length - 1][0].createdAt).getTime()
-
     if (isPolling) {
       interval = setInterval(async () => {
-        // setPlayers([...players, ...[players[0]]]);
+        const lastFetchTime =
+          players.length > 0
+            ? new Date(players[players.length - 1].createdAt).getTime()
+            : new Date(172161082181).getTime();
 
-        const lastFetchTime = new Date(
-          players[players.length - 1].createdAt
-        ).getTime();
         const res = await pollAllPlayers(lastFetchTime);
-
         if (res && res.length > 0) {
           // new player is added
-          console.log("new player: ", res);
           setPlayers((players) => [...players, ...res]);
+          // const imgList = [...players, ...res].map((player) => player.image);
+          // setData({ imgList });
+        }
+
+        const jumpers = await getJumpingPlayers();
+        if (jumpers && jumpers.length > 0) {
+          const jumpersIdList = jumpers.map((player) => player.id);
+          setData({ imgList: jumpersIdList });
         }
         console.log("im polling!");
       }, 1000); // Poll every 1 second
@@ -48,11 +63,14 @@ export default function PlayerList() {
     return () => {
       clearInterval(interval);
     };
-  }, [isPolling, players]);
+  }, [currentTime, isPolling, players, setData]);
 
   const buttonText = isPolling ? "stop polling" : "start polling";
 
+  console.log("playerData: ", data);
+
   const togglePolling = () => {
+    setCurrentTime(Date.now());
     setIsPolling(!isPolling);
   };
 
@@ -60,19 +78,11 @@ export default function PlayerList() {
     setShowTime(!showTime);
   };
 
-  const handleClick = () => {
-    const temp = [...players, ...[players[0]]];
-    setPlayers(temp);
-  };
-
   return (
     <>
       {showTime && (
         <div className="fixed w-full left-0 top-0 h-full bg-gray-600 p-4">
-          <ShowTime imgList={players.map((player) => player.image)} />
-          <Button variant={"default"} onClick={handleClick}>
-            add new
-          </Button>
+          <ShowTime players={players} />
         </div>
       )}
 
@@ -89,10 +99,13 @@ export default function PlayerList() {
           {isPolling && (
             <p className="animate-ping duration-2000 text-sm">piu</p>
           )}
+
           {showTime && (
-            <Button onClick={handleShowTime} className="w-fit">
-              stop the show
-            </Button>
+            <div className="fixed flex justify-end  pr-12 w-full bottom-8">
+              <Button onClick={handleShowTime} className="w-fit">
+                stop the show
+              </Button>
+            </div>
           )}
         </div>
 

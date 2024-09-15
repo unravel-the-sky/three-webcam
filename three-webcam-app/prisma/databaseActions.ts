@@ -34,9 +34,9 @@ export const getAllPlayersInDb = async (): Promise<Player[] | undefined> => {
         const res = await prisma.player.findMany({
             orderBy: {
                 createdAt: 'asc'
-            }
+            },
         })
-        return res
+        return res;
     } catch(err) {
         if (err instanceof Prisma.PrismaClientKnownRequestError) {
             console.error('error happened in gellAllPostsInDb: ', err.message)
@@ -54,6 +54,42 @@ export const pollAllPlayersInDb = async (lastPollingDate: number) => {
             },
             orderBy: {
                 createdAt: 'asc'
+            }
+        })
+        return res
+    } catch(err) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError) {
+            console.error('error happened in gellAllPostsInDb: ', err.message)
+        }
+    }
+}
+
+export const getAllJumpingPlayersInDb = async (): Promise<Player[] | undefined> => {
+    try {
+        const res = await prisma.player.findMany({
+            where: {
+                isOnline: true
+            },
+            orderBy: {
+                createdAt: 'asc'
+            },
+        })
+        return res;
+    } catch(err) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError) {
+            console.error('error happened in gellAllPostsInDb: ', err.message)
+        }
+    }
+}
+
+export const updatePlayerInDbById = async (id: string, state: boolean) => {
+    try {
+        const res = await prisma.player.update({
+            where: {
+                id
+            },
+            data: {
+                isOnline: state
             }
         })
         return res

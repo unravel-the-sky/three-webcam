@@ -31,15 +31,26 @@ export default function TakePhoto({ onNext }: { onNext: () => void }) {
     onNext();
   };
 
+  const handleRetake = () => {
+    setShowCam(true);
+  };
+
   return (
-    <>
+    <div className="flex w-full justify-center">
       {showCam ? (
         <Webcam onComplete={handleComplete} />
       ) : (
-        <>
-          {" "}
+        <div className="flex flex-col gap-4 w-[80%]">
           {user.image ? (
-            <Image src={user.image} width={500} height={500} alt="image" />
+            <div className="flex w-full justify-center items-center">
+              <Image
+                className="h-[100%] object-contain"
+                src={user.image}
+                width={500}
+                height={500}
+                alt="image"
+              />
+            </div>
           ) : (
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 flex flex-col items-center justify-center">
               <Camera className="w-12 h-12 text-gray-400 mb-4" />
@@ -50,16 +61,21 @@ export default function TakePhoto({ onNext }: { onNext: () => void }) {
             </div>
           )}
           {user.image ? (
-            <Button onClick={handleContinue} className="w-full">
-              Continue
-            </Button>
+            <div className="flex justify-between w-full gap-4">
+              <Button variant={"destructive"} onClick={handleRetake}>
+                Retake
+              </Button>
+              <Button variant={"default"} onClick={handleContinue}>
+                OK?
+              </Button>
+            </div>
           ) : (
             <Button onClick={handleTakePhoto} className="w-full">
               Take a Photo
             </Button>
           )}
-        </>
+        </div>
       )}
-    </>
+    </div>
   );
 }
