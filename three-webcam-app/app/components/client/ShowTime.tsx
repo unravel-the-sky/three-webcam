@@ -72,7 +72,7 @@ const Scene = ({ players }: ShowTimeProps) => {
 
   return (
     <>
-      <Physics broadphase="SAP" gravity={[0, -10, 0]} allowSleep>
+      <Physics broadphase="SAP" gravity={[0, -50, 0]} allowSleep>
         <PhyPlane
           color="lightblue"
           position={[0, -2, 4]}
@@ -88,7 +88,7 @@ const Scene = ({ players }: ShowTimeProps) => {
               username={username}
               position={[
                 (Math.random() - 0.5) * 4,
-                10 + index * 4,
+                10 + (players.length - index) * 4,
                 Math.random() - 0.5,
               ]}
               // position={boxes[index]}
@@ -142,7 +142,7 @@ const PhyBox = (props: PhyBoxProps) => {
   const size = 2;
   const [ref, api] = useBox<THREE.Mesh>(() => ({
     args: [size, size, size],
-    mass: 8,
+    mass: 3,
     allowSleep: true,
     ...props,
   }));
@@ -161,7 +161,7 @@ const PhyBox = (props: PhyBoxProps) => {
     if (data && data.imgList.length > 0) {
       if (data.imgList.includes(props.id)) {
         console.log("yello i shall jump! id: ", props.id);
-        api.applyImpulse([(Math.random() - 0.5) * 0, 50, 0], [0, -1, 0]);
+        api.applyImpulse([(Math.random() - 0.5) * 10, 80, 0], [0, -1, 0]);
       }
     }
   }, [api, data, props.id]);
@@ -173,7 +173,8 @@ const PhyBox = (props: PhyBoxProps) => {
         ref={ref}
         onClick={() => {
           api.applyImpulse(
-            [(Math.random() - 0.5) * 10, Math.random() * 50, 0],
+            // [(Math.random() - 0.5) * 10, Math.random() * 50, 0],
+            [10, 50, 0],
             [0, -1, 0]
           );
         }}

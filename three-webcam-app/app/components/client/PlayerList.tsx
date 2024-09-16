@@ -85,7 +85,7 @@ export default function PlayerList() {
           setData({ imgList: jumpersIdList });
         }
         console.log("im polling jumps!");
-      }, 500); // Poll every 1 second
+      }, 500); // Poll every 0.5 second
     }
 
     // Cleanup the interval when component unmounts or polling stops
