@@ -239,13 +239,12 @@ const PhyBox = (props: PhyBoxProps) => {
     : new THREE.TextureLoader().load("/bugsbunny-square-1.png");
   colorMap.colorSpace = THREE.SRGBColorSpace;
 
-  const { data } = usePlayerStore();
-
   const showTexture = useControls("Show texture", {
     val: false,
   });
 
-  const { channel } = useChannel(CHANNEL_NAME, (message) => {
+  const { channel } = useChannel(CHANNEL_NAME, "jump", (message) => {
+    console.log("msg: ", message);
     const { data: jumpData } = message;
     const { playerId } = jumpData;
     const direction = jumpData.direction as JumpDirection;
@@ -253,10 +252,10 @@ const PhyBox = (props: PhyBoxProps) => {
     if (playerId === props.id) {
       switch (direction) {
         case "left":
-          api.applyImpulse([0, 0, 20], [0, 0, 0]);
+          api.applyImpulse([0, 0, 30], [0, 0, 0]);
           return;
         case "up":
-          api.applyImpulse([0, 50, 0], [0, 0, 0]);
+          api.applyImpulse([0, 65, 0], [0, 0, 0]);
           return;
         case "right":
           api.applyImpulse([0, 0, -30], [0, 0, 0]);

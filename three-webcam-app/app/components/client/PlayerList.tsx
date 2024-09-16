@@ -27,12 +27,18 @@ export default function PlayerList() {
     });
   }, []);
 
-  const startWithRandom = () => {
-    getRandomPlayers(100).then((res) => {
+  const addRandos = () => {
+    getRandomPlayers(50).then((res) => {
       if (res) {
-        setPlayers(res);
+        setPlayers((players) => [...players, ...res]);
       }
     });
+  };
+
+  const removeRandos = () => {
+    setPlayers((players) =>
+      players.filter((player) => !player.username.includes("Random"))
+    );
   };
 
   useChannel(CHANNEL_NAME, "newPlayer", (message) => {
@@ -84,8 +90,11 @@ export default function PlayerList() {
             <p className="animate-ping duration-1000 text-sm">piu</p>
           )}
 
-          <Button onClick={startWithRandom} className="w-fit">
-            start with random
+          <Button onClick={addRandos} className="w-fit">
+            add randos
+          </Button>
+          <Button onClick={removeRandos} className="w-fit">
+            remove randos
           </Button>
 
           {showTime && (
