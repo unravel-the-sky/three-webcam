@@ -1,7 +1,7 @@
 "use client";
 
 import { submitForm } from "@/app/serverActions/fileUpload";
-import { jumpPlayerById } from "@/app/serverActions/player";
+import { deletePlayerById, jumpPlayerById } from "@/app/serverActions/player";
 import useUserStore from "@/app/store/userStore";
 import { Button } from "@/components/ui/button";
 import { Player } from "@prisma/client";
@@ -75,25 +75,15 @@ export default function AppWrapper() {
         if (res) {
           localStorage.setItem("userId", res.id);
           localStorage.setItem("username", res.username);
-          alert("success!");
+          publish("newPlayer", { player: res });
         }
       });
     }
   };
 
-  // const handleJumpPlayer = async () => {
-  //   // lets try
-  //   const id = localStorage.getItem("userId");
-  //   if (id) {
-  //     // jumpPlayerById(id, true);
-  //     // setTimeout(() => {
-  //     //   jumpPlayerById(id, false);
-  //     // }, 500);
-  //     // jumpPlayerById(id, true);
-  //   }
-  // };
-
-  const handleReset = () => {
+  const handleReset = async () => {
+    await deletePlayerById(userId);
+    publish("deletePlayer", { playerId: userId });
     localStorage.removeItem("userId");
     localStorage.removeItem("username");
     setUserId("");

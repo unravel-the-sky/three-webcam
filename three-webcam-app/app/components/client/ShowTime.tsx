@@ -6,13 +6,11 @@ import { Player } from "@prisma/client";
 import {
   BoxProps,
   Physics,
-  SphereProps,
   Triplet,
   useBox,
   usePlane,
-  useSphere,
 } from "@react-three/cannon";
-import { Box, OrbitControls, Plane, Text, Torus } from "@react-three/drei";
+import { Box, OrbitControls, Plane, Text } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useChannel } from "ably/react";
 import { useControls } from "leva";
@@ -62,6 +60,17 @@ export default function ShowTime({ players }: ShowTimeProps) {
 // const totalCount = useControls("Total number", {
 //   val: 20,
 // });
+// position={boxes[index]}
+// position={[
+// circular here:
+// radius.val * Math.cos((index / totalCount.val) * Math.PI * 2),
+// Math.random() * 40,
+// radius.val * Math.sin((index / totalCount.val) * Math.PI * 2),
+// helt random here:
+// (Math.random() - 0.5) * 20,
+// Math.random() * 40,
+// (Math.random() - 0.5) * 10,
+// ]}
 const Scene = ({ players }: ShowTimeProps) => {
   const boxes = useMemo(() => {
     const gap = 2;
@@ -78,8 +87,6 @@ const Scene = ({ players }: ShowTimeProps) => {
     return positions;
   }, []);
 
-  const groupRef = useRef<any>(null!);
-
   return (
     <>
       <Physics broadphase="SAP" gravity={[0, -50, 0]} allowSleep>
@@ -88,34 +95,21 @@ const Scene = ({ players }: ShowTimeProps) => {
           position={[0, -2, 4]}
           rotation={[-Math.PI / 2, 0, 0]}
         />
-        <group ref={groupRef}>
-          {players.map(({ image, id, color, username }, index) => (
-            <PhyBox
-              imgUrl={image}
-              id={id}
-              color={color}
-              key={id}
-              username={username}
-              mass={5}
-              position={[
-                (Math.random() - 0.5) * 4,
-                10 + (players.length - index) * 4,
-                Math.random() - 0.5,
-              ]}
-              // position={boxes[index]}
-              // position={[
-              // circular here:
-              // radius.val * Math.cos((index / totalCount.val) * Math.PI * 2),
-              // Math.random() * 40,
-              // radius.val * Math.sin((index / totalCount.val) * Math.PI * 2),
-              // helt random here:
-              // (Math.random() - 0.5) * 20,
-              // Math.random() * 40,
-              // (Math.random() - 0.5) * 10,
-              // ]}
-            />
-          ))}
-        </group>
+        {players.map(({ image, id, color, username }, index) => (
+          <PhyBox
+            imgUrl={image}
+            id={id}
+            color={color}
+            key={id}
+            username={username}
+            mass={5}
+            position={[
+              (Math.random() - 0.5) * 4,
+              10 + (players.length - index) * 4,
+              Math.random() - 0.5,
+            ]}
+          />
+        ))}
         <PhyWall
           position={[2, 10, -20]}
           args={[1, 30, 90]}
@@ -255,6 +249,7 @@ const PhyBox = (props: PhyBoxProps) => {
     const { data: jumpData } = message;
     const { playerId } = jumpData;
     const direction = jumpData.direction as JumpDirection;
+
     if (playerId === props.id) {
       switch (direction) {
         case "left":

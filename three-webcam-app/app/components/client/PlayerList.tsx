@@ -4,10 +4,11 @@ import {
   deleteAllPlayers,
   getAllPlayers,
   getRandomPlayers,
-  pollAllPlayers,
 } from "@/app/serverActions/player";
+import { CHANNEL_NAME } from "@/app/utils";
 import { Button } from "@/components/ui/button";
-import { Jump, Player } from "@prisma/client";
+import { Player } from "@prisma/client";
+import { useChannel } from "ably/react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import ShowTime from "./ShowTime";
@@ -15,7 +16,6 @@ import ShowTime from "./ShowTime";
 export default function PlayerList() {
   const [isPolling, setIsPolling] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
-  const [jumpers, setJumpers] = useState<Jump[]>([]);
 
   const [showTime, setShowTime] = useState(false);
 
@@ -35,31 +35,17 @@ export default function PlayerList() {
     });
   };
 
-  useEffect(() => {
-    let interval = undefined;
+  useChannel(CHANNEL_NAME, "newPlayer", (message) => {
+    const { data } = message;
+    const player = data.player as Player;
+    setPlayers((players) => [...players, player]);
+  });
 
-    if (isPolling) {
-      interval = setInterval(async () => {
-        const lastFetchTime =
-          players.length > 0
-            ? new Date(players[players.length - 1].createdAt).getTime()
-            : new Date(172161082181).getTime();
-
-        const res = await pollAllPlayers(lastFetchTime);
-        if (res && res.length > 0) {
-          // new player is added
-          setPlayers((players) => [...players, ...res]);
-        }
-
-        console.log("im polling players!");
-      }, 1000); // Poll every 1 second
-    }
-
-    // Cleanup the interval when component unmounts or polling stops
-    return () => {
-      clearInterval(interval);
-    };
-  }, [isPolling, players]);
+  useChannel(CHANNEL_NAME, "deletePlayer", (message) => {
+    const { data } = message;
+    const playerId = data.playerId as string;
+    setPlayers((players) => players.filter((item) => item.id !== playerId));
+  });
 
   const buttonText = isPolling ? "stop polling" : "start polling";
 
