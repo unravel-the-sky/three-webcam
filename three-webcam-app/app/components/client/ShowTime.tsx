@@ -69,10 +69,6 @@ const Scene = ({ players }: ShowTimeProps) => {
   }, []);
 
   const groupRef = useRef<any>(null!);
-  // useFrame((state, delta) => {
-  //   groupRef.current.rotation.y += delta * 0.1;
-  //   groupRef.current.rotation.x += delta * 0.1;
-  // });
 
   return (
     <>
@@ -146,7 +142,7 @@ const PhyBox = (props: PhyBoxProps) => {
   const size = 2;
   const [ref, api] = useBox<THREE.Mesh>(() => ({
     args: [size, size, size],
-    mass: 5,
+    mass: 8,
     allowSleep: true,
     ...props,
   }));
@@ -165,7 +161,7 @@ const PhyBox = (props: PhyBoxProps) => {
     if (data && data.imgList.length > 0) {
       if (data.imgList.includes(props.id)) {
         console.log("yello i shall jump! id: ", props.id);
-        api.applyImpulse([(Math.random() - 0.5) * 10, 50, 0], [0, -1, 0]);
+        api.applyImpulse([(Math.random() - 0.5) * 0, 50, 0], [0, -1, 0]);
       }
     }
   }, [api, data, props.id]);

@@ -66,14 +66,15 @@ export default function AppWrapper() {
     }
   };
 
-  const handleJumpPlayer = () => {
+  const handleJumpPlayer = async () => {
     // lets try
     const id = localStorage.getItem("userId");
     if (id) {
-      setTimeout(() => {
-        jumpPlayerById(id, false);
-      }, 500);
       jumpPlayerById(id, true);
+      // setTimeout(() => {
+      //   jumpPlayerById(id, false);
+      // }, 500);
+      // jumpPlayerById(id, true);
     }
   };
 

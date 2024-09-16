@@ -17,6 +17,15 @@ model Player {
     image     String   @default("")
     createdAt DateTime @default(now())
     isOnline  Boolean  @default(false)
+    Jump      Jump[]
+}
+
+model Jump {
+    id        String   @id @default(cuid())
+    createdAt DateTime @default(now())
+    player    Player   @relation(fields: [playerId], references: [id])
+    isJumping Boolean
+    playerId  String
 }
 
 model MailTemplate {

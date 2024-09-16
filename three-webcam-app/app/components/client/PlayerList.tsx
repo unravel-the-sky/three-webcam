@@ -6,10 +6,11 @@ import {
   getJumpingPlayers,
   getRandomPlayers,
   pollAllPlayers,
+  pollJumpingPlayers,
 } from "@/app/serverActions/player";
 import usePlayerStore from "@/app/store/playerStore";
 import { Button } from "@/components/ui/button";
-import { Player } from "@prisma/client";
+import { Jump, Player } from "@prisma/client";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import ShowTime from "./ShowTime";
@@ -17,6 +18,7 @@ import ShowTime from "./ShowTime";
 export default function PlayerList() {
   const [isPolling, setIsPolling] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [jumpers, setJumpers] = useState<Jump[]>([]);
 
   const [showTime, setShowTime] = useState(false);
 
@@ -54,16 +56,9 @@ export default function PlayerList() {
         if (res && res.length > 0) {
           // new player is added
           setPlayers((players) => [...players, ...res]);
-          // const imgList = [...players, ...res].map((player) => player.image);
-          // setData({ imgList });
         }
 
-        const jumpers = await getJumpingPlayers();
-        if (jumpers && jumpers.length > 0) {
-          const jumpersIdList = jumpers.map((player) => player.id);
-          setData({ imgList: jumpersIdList });
-        }
-        console.log("im polling!");
+        console.log("im polling players!");
       }, 1000); // Poll every 1 second
     }
 
@@ -71,7 +66,33 @@ export default function PlayerList() {
     return () => {
       clearInterval(interval);
     };
-  }, [currentTime, isPolling, players, setData]);
+  }, [isPolling, players]);
+
+  useEffect(() => {
+    let interval = undefined;
+
+    if (isPolling) {
+      interval = setInterval(async () => {
+        const lastFetchTime =
+          jumpers.length > 0
+            ? new Date(jumpers[jumpers.length - 1].createdAt).getTime()
+            : new Date(172161082181).getTime();
+
+        const polledJumpers = await pollJumpingPlayers(lastFetchTime);
+        if (polledJumpers && polledJumpers.length > 0) {
+          setJumpers((jumpers) => [...jumpers, ...polledJumpers]);
+          const jumpersIdList = jumpers.map((player) => player.playerId);
+          setData({ imgList: jumpersIdList });
+        }
+        console.log("im polling jumps!");
+      }, 500); // Poll every 1 second
+    }
+
+    // Cleanup the interval when component unmounts or polling stops
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isPolling, jumpers, setData]);
 
   const buttonText = isPolling ? "stop polling" : "start polling";
 
