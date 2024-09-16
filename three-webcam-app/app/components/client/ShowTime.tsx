@@ -14,10 +14,6 @@ interface ShowTimeProps {
 }
 
 export default function ShowTime({ players }: ShowTimeProps) {
-  // const data = useMemo(() => {
-  //   return players.map((player) => ({ imageUrl: player.image, id: player.id }));
-  // }, [players]);
-
   const showAxis = useControls("Show axis helper", {
     val: false,
   });
@@ -155,19 +151,6 @@ const PhyBox = (props: PhyBoxProps) => {
   }));
   const colorMap = new THREE.TextureLoader().load(props.imgUrl);
   colorMap.colorSpace = THREE.SRGBColorSpace;
-
-  const aoMap = new THREE.TextureLoader().load(
-    "/textures/recycled_brick_floor_arm_1k.jpg"
-  );
-  const roughnessMap = new THREE.TextureLoader().load(
-    "/textures/recycled_brick_floor_rough_1k.jpg"
-  );
-  const displacementMap = new THREE.TextureLoader().load(
-    "/textures/recycled_brick_floor_disp_1k.jpg"
-  );
-  const diffusionMap = new THREE.TextureLoader().load(
-    "/textures/recycled_brick_floor_diff_1k.jpg"
-  );
 
   const { data } = usePlayerStore();
 
