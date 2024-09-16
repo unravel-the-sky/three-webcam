@@ -255,7 +255,7 @@ const PhyBox = (props: PhyBoxProps) => {
           api.applyImpulse([0, 0, 30], [0, 0, 0]);
           return;
         case "up":
-          api.applyImpulse([0, 65, 0], [0, 0, 0]);
+          api.applyImpulse([0, 75, 0], [0, 0, 0]);
           return;
         case "right":
           api.applyImpulse([0, 0, -30], [0, 0, 0]);
