@@ -14,7 +14,7 @@ import { Box, OrbitControls, Plane, Text } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useChannel } from "ably/react";
 import { useControls } from "leva";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { JumpDirection } from "./AppWrapper";
 
@@ -183,6 +183,9 @@ const PhyWallFloor = ({
   position,
   rotation = [0, 0, 0],
 }: Pick<BoxProps, "args" | "position" | "rotation">) => {
+  const { publish } = useChannel(CHANNEL_NAME);
+  const [announced, setAnnounced] = useState(false);
+
   const [ref, api] = useBox(
     () => ({
       args: args,
@@ -193,6 +196,10 @@ const PhyWallFloor = ({
         const hitObject = e.contact.bi;
         const { name } = hitObject;
         console.log(`${name} won!`);
+        if (!announced) {
+          publish("winner", { playerId: name });
+          setAnnounced(true);
+        }
       },
     }),
     useRef<THREE.Mesh>(null)
@@ -293,7 +300,6 @@ const PhyBox = (props: PhyBoxProps) => {
             roughness={0.3}
             metalness={0.1}
           />
-          // <meshNormalMaterial />
         )}
       </Box>
     </>

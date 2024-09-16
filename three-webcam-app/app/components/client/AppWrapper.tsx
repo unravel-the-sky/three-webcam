@@ -33,6 +33,7 @@ export default function AppWrapper() {
   const [step, setStep] = useState(1);
   const [userId, setUserId] = useState("");
   const [username, setUsername] = useState("");
+  const [color, setColor] = useState("");
 
   const userStore = useUserStore();
   const { user, setUser } = userStore;
@@ -41,17 +42,21 @@ export default function AppWrapper() {
     setStep(step + 1);
   };
 
-  const { channel } = useChannel(CHANNEL_NAME, (message) => {
-    console.log(message);
-  });
-
   const { publish } = useChannel(CHANNEL_NAME);
-
-  const [isPending, startTransition] = useTransition();
-
   const handleJumpPlayer = (direction: JumpDirection) => {
     publish("jump", { playerId: userId, direction });
   };
+
+  useChannel(CHANNEL_NAME, "winner", (message) => {
+    console.log("winner happened!");
+    const { data } = message;
+    const winnerId = data.playerId as string;
+    if (winnerId === userId) {
+      console.log("connngratulatu");
+    }
+  });
+
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
@@ -59,6 +64,9 @@ export default function AppWrapper() {
 
     const username = localStorage.getItem("username");
     if (username) setUsername(username);
+
+    const color = localStorage.getItem("userColor");
+    if (color) setColor(`bg-[${color}] w-24 h-8`);
   }, []);
 
   const handleUpload = async () => {
@@ -75,6 +83,7 @@ export default function AppWrapper() {
         if (res) {
           localStorage.setItem("userId", res.id);
           localStorage.setItem("username", res.username);
+          localStorage.setItem("userColor", res.color);
           publish("newPlayer", { player: res });
         }
       });
@@ -86,8 +95,10 @@ export default function AppWrapper() {
     publish("deletePlayer", { playerId: userId });
     localStorage.removeItem("userId");
     localStorage.removeItem("username");
+    localStorage.removeItem("userColor");
     setUserId("");
     setUsername("");
+    setColor("");
     setUser({
       color: "",
       username: "",
@@ -100,6 +111,7 @@ export default function AppWrapper() {
       {userId ? (
         <div className=" flex flex-col gap-4 items-center">
           <h4>hey {username}</h4>
+          <div className={color}></div>
           <div className="mt-12 flex gap-4">
             <div>
               <div className="text-sm">jump left</div>
