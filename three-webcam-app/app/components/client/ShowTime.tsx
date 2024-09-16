@@ -76,7 +76,7 @@ const Scene = ({ players }: ShowTimeProps) => {
 
   return (
     <>
-      <Physics broadphase="SAP" gravity={[0, -10, 0]}>
+      <Physics broadphase="SAP" gravity={[0, -10, 0]} allowSleep>
         <PhyPlane
           color="lightblue"
           position={[0, -2, 4]}
@@ -92,7 +92,7 @@ const Scene = ({ players }: ShowTimeProps) => {
               username={username}
               position={[
                 (Math.random() - 0.5) * 4,
-                (10 + index * 4) % 80,
+                10 + index * 4,
                 Math.random() - 0.5,
               ]}
               // position={boxes[index]}
@@ -147,9 +147,12 @@ const PhyBox = (props: PhyBoxProps) => {
   const [ref, api] = useBox<THREE.Mesh>(() => ({
     args: [size, size, size],
     mass: 5,
+    allowSleep: true,
     ...props,
   }));
-  const colorMap = new THREE.TextureLoader().load(props.imgUrl);
+  const colorMap = props.imgUrl
+    ? new THREE.TextureLoader().load(props.imgUrl)
+    : new THREE.TextureLoader().load("/bugsbunny-square-1.png");
   colorMap.colorSpace = THREE.SRGBColorSpace;
 
   const { data } = usePlayerStore();

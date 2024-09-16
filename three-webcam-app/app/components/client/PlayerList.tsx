@@ -4,6 +4,7 @@ import {
   deleteAllPlayers,
   getAllPlayers,
   getJumpingPlayers,
+  getRandomPlayers,
   pollAllPlayers,
 } from "@/app/serverActions/player";
 import usePlayerStore from "@/app/store/playerStore";
@@ -27,11 +28,17 @@ export default function PlayerList() {
     getAllPlayers().then((res) => {
       if (res) {
         setPlayers(res);
-        // const imgList = res.map((player) => player.image);
-        // setData({ imgList });
       }
     });
   }, []);
+
+  const startWithRandom = () => {
+    getRandomPlayers(100).then((res) => {
+      if (res) {
+        setPlayers(res);
+      }
+    });
+  };
 
   useEffect(() => {
     let interval = undefined;
@@ -104,13 +111,25 @@ export default function PlayerList() {
             <p className="animate-ping duration-1000 text-sm">piu</p>
           )}
 
+          <Button onClick={startWithRandom} className="w-fit">
+            start with random
+          </Button>
+
           {showTime && (
-            <div className="fixed flex justify-end  pr-12 w-full bottom-8">
+            <div className="fixed flex justify-start w-full bottom-8 z-20">
               <Button onClick={handleShowTime} className="w-fit">
                 stop the show
               </Button>
             </div>
           )}
+          <div className="fixed flex flex-col items-end justify-end pr-12 w-full bottom-8">
+            <Image
+              src="/qr-code.png"
+              width={200}
+              height={200}
+              alt={"QR code"}
+            />
+          </div>
         </div>
 
         {players && players.length > 0 && (
@@ -123,27 +142,37 @@ export default function PlayerList() {
                   className="flex flex-col p-2 outline-dashed hover:bg-gray-200 hover:shadow-lg transition-all"
                 >
                   <p className="text-sm">username: {player.username}</p>
-                  <Image
-                    src={new URL(player.image).toString()}
-                    alt="img"
-                    className="object-cover h-[100px] w-[150px]"
-                    width={150}
-                    height={100}
-                  />
+                  {player.image ? (
+                    <Image
+                      src={new URL(player.image).toString()}
+                      alt="img"
+                      className="object-cover h-[100px] w-[150px]"
+                      width={150}
+                      height={100}
+                    />
+                  ) : (
+                    <Image
+                      src={"/bugsbunny-square-1.png"}
+                      alt="img"
+                      className="object-cover h-[100px] w-[150px]"
+                      width={150}
+                      height={100}
+                    />
+                  )}
                 </div>
               ))}
-            </div>
-            <div className="mt-4 flex w-full gap-4">
-              <Button onClick={handleShowTime} className="w-fit">
-                Show time!
-              </Button>
-              <Button
-                onClick={handleDeleteAll}
-                variant={"destructive"}
-                className="w-fit"
-              >
-                Delete all
-              </Button>
+              <div className="mt-4 flex w-full gap-4">
+                <Button onClick={handleShowTime} className="w-fit">
+                  show time!
+                </Button>
+                <Button
+                  onClick={handleDeleteAll}
+                  variant={"destructive"}
+                  className="w-fit"
+                >
+                  delete all
+                </Button>
+              </div>
             </div>
           </div>
         )}
