@@ -3,12 +3,9 @@
 import {
   deleteAllPlayers,
   getAllPlayers,
-  getJumpingPlayers,
   getRandomPlayers,
   pollAllPlayers,
-  pollJumpingPlayers,
 } from "@/app/serverActions/player";
-import usePlayerStore from "@/app/store/playerStore";
 import { Button } from "@/components/ui/button";
 import { Jump, Player } from "@prisma/client";
 import Image from "next/image";
@@ -21,10 +18,6 @@ export default function PlayerList() {
   const [jumpers, setJumpers] = useState<Jump[]>([]);
 
   const [showTime, setShowTime] = useState(false);
-
-  const [currentTime, setCurrentTime] = useState(0);
-
-  const { setData, data } = usePlayerStore();
 
   useEffect(() => {
     getAllPlayers().then((res) => {
@@ -68,36 +61,9 @@ export default function PlayerList() {
     };
   }, [isPolling, players]);
 
-  useEffect(() => {
-    let interval = undefined;
-
-    if (isPolling) {
-      interval = setInterval(async () => {
-        const lastFetchTime =
-          jumpers.length > 0
-            ? new Date(jumpers[jumpers.length - 1].createdAt).getTime()
-            : new Date(172161082181).getTime();
-
-        const polledJumpers = await pollJumpingPlayers(lastFetchTime);
-        if (polledJumpers && polledJumpers.length > 0) {
-          setJumpers((jumpers) => [...jumpers, ...polledJumpers]);
-          const jumpersIdList = jumpers.map((player) => player.playerId);
-          setData({ imgList: jumpersIdList });
-        }
-        console.log("im polling jumps!");
-      }, 500); // Poll every 0.5 second
-    }
-
-    // Cleanup the interval when component unmounts or polling stops
-    return () => {
-      clearInterval(interval);
-    };
-  }, [isPolling, jumpers, setData]);
-
   const buttonText = isPolling ? "stop polling" : "start polling";
 
   const togglePolling = () => {
-    setCurrentTime(Date.now());
     setIsPolling(!isPolling);
   };
 

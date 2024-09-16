@@ -1,13 +1,24 @@
 "use client";
 
 import usePlayerStore from "@/app/store/playerStore";
+import { CHANNEL_NAME } from "@/app/utils";
 import { Player } from "@prisma/client";
-import { Physics, Triplet, useBox, usePlane } from "@react-three/cannon";
-import { Box, OrbitControls, Plane, Text } from "@react-three/drei";
+import {
+  BoxProps,
+  Physics,
+  SphereProps,
+  Triplet,
+  useBox,
+  usePlane,
+  useSphere,
+} from "@react-three/cannon";
+import { Box, OrbitControls, Plane, Text, Torus } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
+import { useChannel } from "ably/react";
 import { useControls } from "leva";
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo, useRef } from "react";
 import * as THREE from "three";
+import { JumpDirection } from "./AppWrapper";
 
 interface ShowTimeProps {
   players: Player[];
@@ -22,9 +33,9 @@ export default function ShowTime({ players }: ShowTimeProps) {
     <div className="flex-1 bg-slate-200 h-full">
       <Canvas
         camera={{
-          fov: 50,
+          fov: 45,
           near: 0.1,
-          far: 100,
+          far: 1000,
           position: [20, 25, 20],
         }}
         className="h-full"
@@ -45,14 +56,13 @@ export default function ShowTime({ players }: ShowTimeProps) {
 // Scene component
 // const radius = 12;
 // const totalCount = 20;
+// const radius = useControls("Shape radius", {
+//   val: 12,
+// });
+// const totalCount = useControls("Total number", {
+//   val: 20,
+// });
 const Scene = ({ players }: ShowTimeProps) => {
-  // const radius = useControls("Shape radius", {
-  //   val: 12,
-  // });
-  // const totalCount = useControls("Total number", {
-  //   val: 20,
-  // });
-
   const boxes = useMemo(() => {
     const gap = 2;
     const size = 1;
@@ -86,6 +96,7 @@ const Scene = ({ players }: ShowTimeProps) => {
               color={color}
               key={id}
               username={username}
+              mass={5}
               position={[
                 (Math.random() - 0.5) * 4,
                 10 + (players.length - index) * 4,
@@ -105,6 +116,16 @@ const Scene = ({ players }: ShowTimeProps) => {
             />
           ))}
         </group>
+        <PhyWall
+          position={[2, 10, -20]}
+          args={[1, 30, 90]}
+          rotation={[0, Math.PI / 2, 0]}
+        />
+        <PhyWallFloor
+          position={[0, -1, -65]}
+          args={[1, 90, 90]}
+          rotation={[0, 0, Math.PI / 2]}
+        />
       </Physics>
       <ambientLight intensity={1} />
       <directionalLight />
@@ -129,6 +150,79 @@ const PhyPlane = ({ color, ...props }: PhyPlaneProps) => {
   );
 };
 
+const PhyWall = ({
+  args = [1, 1, 1],
+  position,
+  rotation = [0, 0, 0],
+}: Pick<BoxProps, "args" | "position" | "rotation">) => {
+  const [ref, api] = useBox(
+    () => ({
+      args: args,
+      mass: 0,
+      position,
+      rotation,
+    }),
+    useRef<THREE.Mesh>(null)
+  );
+
+  const wall = useControls("the Wall", {
+    visible: false,
+  });
+
+  return (
+    <Box
+      args={args}
+      ref={ref}
+      position={position}
+      rotation={rotation}
+      receiveShadow
+      castShadow
+      visible={wall.visible}
+    >
+      <meshNormalMaterial />
+    </Box>
+  );
+};
+
+const PhyWallFloor = ({
+  args = [1, 1, 1],
+  position,
+  rotation = [0, 0, 0],
+}: Pick<BoxProps, "args" | "position" | "rotation">) => {
+  const [ref, api] = useBox(
+    () => ({
+      args: args,
+      mass: 0,
+      position,
+      rotation,
+      onCollide: (e) => {
+        const hitObject = e.contact.bi;
+        const { name } = hitObject;
+        console.log(`${name} won!`);
+      },
+    }),
+    useRef<THREE.Mesh>(null)
+  );
+
+  const wall = useControls("the Wall", {
+    visible: false,
+  });
+
+  return (
+    <Box
+      args={args}
+      ref={ref}
+      position={position}
+      rotation={rotation}
+      receiveShadow
+      castShadow
+      visible={wall.visible}
+    >
+      <meshNormalMaterial />
+    </Box>
+  );
+};
+
 // PhyBox component
 interface PhyBoxProps {
   imgUrl: string;
@@ -136,13 +230,13 @@ interface PhyBoxProps {
   color: string;
   id: string;
   username: string;
+  mass: number;
 }
 
 const PhyBox = (props: PhyBoxProps) => {
   const size = 2;
   const [ref, api] = useBox<THREE.Mesh>(() => ({
     args: [size, size, size],
-    mass: 3,
     allowSleep: true,
     ...props,
   }));
@@ -157,20 +251,33 @@ const PhyBox = (props: PhyBoxProps) => {
     val: false,
   });
 
-  useEffect(() => {
-    if (data && data.imgList.length > 0) {
-      if (data.imgList.includes(props.id)) {
-        console.log("yello i shall jump! id: ", props.id);
-        api.applyImpulse([(Math.random() - 0.5) * 10, 80, 0], [0, -1, 0]);
+  const { channel } = useChannel(CHANNEL_NAME, (message) => {
+    const { data: jumpData } = message;
+    const { playerId } = jumpData;
+    const direction = jumpData.direction as JumpDirection;
+    if (playerId === props.id) {
+      switch (direction) {
+        case "left":
+          api.applyImpulse([0, 0, 20], [0, 0, 0]);
+          return;
+        case "up":
+          api.applyImpulse([0, 50, 0], [0, 0, 0]);
+          return;
+        case "right":
+          api.applyImpulse([0, 0, -30], [0, 0, 0]);
+          return;
+        default:
+          return;
       }
     }
-  }, [api, data, props.id]);
+  });
 
   return (
     <>
       <Box
         args={[size, size, size]}
         ref={ref}
+        name={props.id}
         onClick={() => {
           api.applyImpulse(
             // [(Math.random() - 0.5) * 10, Math.random() * 50, 0],

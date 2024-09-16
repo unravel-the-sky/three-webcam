@@ -9,6 +9,9 @@ import { useEffect, useState, useTransition } from "react";
 import Confirm from "./Confirm";
 import SplashScreen from "./SplashScreen";
 import TakePhoto from "./TakePhoto";
+import { CHANNEL_NAME } from "@/app/utils";
+import { useChannel } from "ably/react";
+import { ArrowBigLeft, ArrowBigRight, ArrowBigUp } from "lucide-react";
 
 const dataURIToBlob = (dataURI: string) => {
   const splitDataURI = dataURI.split(",");
@@ -24,6 +27,8 @@ const dataURIToBlob = (dataURI: string) => {
   return new Blob([ia], { type: mimeString });
 };
 
+export type JumpDirection = "left" | "up" | "right";
+
 export default function AppWrapper() {
   const [step, setStep] = useState(1);
   const [userId, setUserId] = useState("");
@@ -36,7 +41,17 @@ export default function AppWrapper() {
     setStep(step + 1);
   };
 
+  const { channel } = useChannel(CHANNEL_NAME, (message) => {
+    console.log(message);
+  });
+
+  const { publish } = useChannel(CHANNEL_NAME);
+
   const [isPending, startTransition] = useTransition();
+
+  const handleJumpPlayer = (direction: JumpDirection) => {
+    publish("jump", { playerId: userId, direction });
+  };
 
   useEffect(() => {
     const userId = localStorage.getItem("userId");
@@ -66,17 +81,17 @@ export default function AppWrapper() {
     }
   };
 
-  const handleJumpPlayer = async () => {
-    // lets try
-    const id = localStorage.getItem("userId");
-    if (id) {
-      jumpPlayerById(id, true);
-      // setTimeout(() => {
-      //   jumpPlayerById(id, false);
-      // }, 500);
-      // jumpPlayerById(id, true);
-    }
-  };
+  // const handleJumpPlayer = async () => {
+  //   // lets try
+  //   const id = localStorage.getItem("userId");
+  //   if (id) {
+  //     // jumpPlayerById(id, true);
+  //     // setTimeout(() => {
+  //     //   jumpPlayerById(id, false);
+  //     // }, 500);
+  //     // jumpPlayerById(id, true);
+  //   }
+  // };
 
   const handleReset = () => {
     localStorage.removeItem("userId");
@@ -93,15 +108,40 @@ export default function AppWrapper() {
   return (
     <div className="flex items-center justify-center flex-col gap-2 overflow-y-hidden">
       {userId ? (
-        <div className="mt-12 flex flex-col gap-4 items-center">
+        <div className=" flex flex-col gap-4 items-center">
           <h4>hey {username}</h4>
-          <Button
-            variant={"blue"}
-            onClick={handleJumpPlayer}
-            className="rounded-[50%] px-4 py-10 shadow-lg text-lg w-fit"
-          >
-            Jump
-          </Button>
+          <div className="mt-12 flex gap-4">
+            <div>
+              <div className="text-sm">jump left</div>
+              <Button
+                variant={"blue"}
+                onClick={() => handleJumpPlayer("left")}
+                className="shadow-lg text-lg w-fit"
+              >
+                <ArrowBigLeft className="rotate-45" />
+              </Button>
+            </div>
+            <div className="mt-[-1rem]">
+              <div className="text-sm">jump up</div>
+              <Button
+                variant={"blue"}
+                onClick={() => handleJumpPlayer("up")}
+                className="shadow-lg text-lg w-fit "
+              >
+                <ArrowBigUp />
+              </Button>
+            </div>
+            <div>
+              <div className="text-sm">jump right</div>
+              <Button
+                variant={"blue"}
+                onClick={() => handleJumpPlayer("right")}
+                className="shadow-lg text-lg w-fit"
+              >
+                <ArrowBigRight className="rotate-[-45deg]" />
+              </Button>
+            </div>
+          </div>
           <Button
             variant={"destructive"}
             onClick={handleReset}

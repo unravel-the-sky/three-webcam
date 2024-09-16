@@ -7,3 +7,5 @@ export function formatString(text: string) {
   }
   
   export const DEFAULT_MAILSENDER_MAIL = 'MS_BEwv8P@trial-pxkjn413n99gz781.mlsender.net'
+
+  export const CHANNEL_NAME = 'jumping-players'
