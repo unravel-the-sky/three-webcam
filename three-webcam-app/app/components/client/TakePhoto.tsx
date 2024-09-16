@@ -10,7 +10,6 @@ import Image from "next/image";
 export default function TakePhoto({ onNext }: { onNext: () => void }) {
   const [showCam, setShowCam] = useState(false);
   const handleTakePhoto = () => {
-    console.log("lol");
     setShowCam(true);
   };
 
@@ -27,7 +26,6 @@ export default function TakePhoto({ onNext }: { onNext: () => void }) {
   };
 
   const handleContinue = () => {
-    console.log("asdf");
     onNext();
   };
 

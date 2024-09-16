@@ -28,6 +28,7 @@ const dataURIToBlob = (dataURI: string) => {
 export default function AppWrapper() {
   const [step, setStep] = useState(1);
   const [userId, setUserId] = useState("");
+  const [username, setUsername] = useState("");
 
   const userStore = useUserStore();
   const { user } = userStore;
@@ -39,10 +40,11 @@ export default function AppWrapper() {
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    const val = localStorage.getItem("userId");
-    if (val) {
-      setUserId(val);
-    }
+    const userId = localStorage.getItem("userId");
+    if (userId) setUserId(userId);
+
+    const username = localStorage.getItem("username");
+    if (username) setUsername(username);
   }, []);
 
   const handleUpload = async () => {
@@ -57,7 +59,8 @@ export default function AppWrapper() {
       startTransition(async () => {
         const res = (await submitForm(formData)) as Player | undefined;
         if (res) {
-          localStorage.set("userId", res.id);
+          localStorage.setItem("userId", res.id);
+          localStorage.setItem("username", res.username);
           alert("success!");
         }
       });
@@ -75,34 +78,44 @@ export default function AppWrapper() {
     }
   };
 
+  const handleReset = () => {
+    localStorage.removeItem("userId");
+    localStorage.removeItem("username");
+    setUserId("");
+    setUsername("");
+  };
+
   return (
     <div className="flex items-center justify-center flex-col gap-2 overflow-y-hidden">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full">
-        {isPending ? (
-          <div>loading..</div>
-        ) : (
-          <>
-            {user && user.username && (
-              <h1 className="text-2xl font-bold mb-6 text-center">
-                Hey, {user.username}
-              </h1>
-            )}
-
-            {step === 1 && <SplashScreen onNext={handleNext} />}
-            {step === 2 && <TakePhoto onNext={handleNext} />}
-            {step === 3 && <Confirm onConfirm={handleUpload} />}
-          </>
-        )}
-      </div>
-      {userId && (
-        <div className="mt-12">
+      {userId ? (
+        <div className="mt-12 flex flex-col gap-4 items-center">
+          <h4>hey {username}</h4>
           <Button
             variant={"blue"}
             onClick={handleJumpPlayer}
-            className="rounded-[50%] px-4 py-10 shadow-lg text-lg"
+            className="rounded-[50%] px-4 py-10 shadow-lg text-lg w-fit"
           >
             Jump
           </Button>
+          <Button
+            variant={"destructive"}
+            onClick={handleReset}
+            className="mt-12 px-4 py-4 shadow-lg text-lg"
+          >
+            Reset
+          </Button>
+        </div>
+      ) : (
+        <div className="bg-white p-8 rounded-lg shadow-lg w-full">
+          {isPending ? (
+            <div>loading..</div>
+          ) : (
+            <>
+              {step === 1 && <SplashScreen onNext={handleNext} />}
+              {step === 2 && <TakePhoto onNext={handleNext} />}
+              {step === 3 && <Confirm onConfirm={handleUpload} />}
+            </>
+          )}
         </div>
       )}
     </div>

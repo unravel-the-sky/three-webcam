@@ -37,7 +37,6 @@ export default function Webcam({
           onClick={() => {
             if (camera.current) {
               const photo = camera.current.takePhoto();
-              console.log(photo);
               setImage(photo as string);
               onComplete(photo as string);
             }
