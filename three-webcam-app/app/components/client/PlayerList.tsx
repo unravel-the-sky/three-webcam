@@ -122,7 +122,7 @@ export default function PlayerList() {
               </Button>
             </div>
           )}
-          <div className="fixed flex flex-col items-end justify-end pr-12 w-full bottom-8">
+          <div className="fixed flex flex-col items-end justify-end pr-10 right-0 bottom-8">
             <Image
               src="/qr-code.png"
               width={200}
