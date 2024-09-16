@@ -78,6 +78,10 @@ export default function PlayerList() {
     setShowTime(!showTime);
   };
 
+  const handleDeleteAll = () => {
+    // todo
+  };
+
   return (
     <>
       {showTime && (
@@ -129,9 +133,16 @@ export default function PlayerList() {
                 </div>
               ))}
             </div>
-            <div className="mt-4">
+            <div className="mt-4 flex w-full gap-4">
               <Button onClick={handleShowTime} className="w-fit">
                 Show time!
+              </Button>
+              <Button
+                onClick={handleDeleteAll}
+                variant={"destructive"}
+                className="w-fit"
+              >
+                Delete all
               </Button>
             </div>
           </div>
