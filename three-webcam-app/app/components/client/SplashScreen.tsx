@@ -7,19 +7,21 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Webcam from "./Webcam";
 import useUserStore from "@/app/store/userStore";
+import colors from "nice-color-palettes";
 
-const colors = [
-  { name: "Red", value: "#FF0000" },
-  { name: "Blue", value: "#0000FF" },
-  { name: "Green", value: "#00FF00" },
-  { name: "Yellow", value: "#FFFF00" },
-  { name: "Purple", value: "#800080" },
-  { name: "Orange", value: "#FFA500" },
-  { name: "Pink", value: "#FFC0CB" },
-  { name: "Teal", value: "#008080" },
-  { name: "Lime", value: "#738a73" },
-  { name: "Brown", value: "#A52A2A" },
-];
+const niceColors = [...colors[3], ...colors[4], ...colors[26]];
+// [
+//   "#99b898",
+//   "#fecea8",
+//   "#ff847c",
+//   "#e84a5f",
+//   "#2a363b",
+//   "#fe4365",
+//   "#fc9d9a",
+//   "#f9cdad",
+//   "#c8c8a9",
+//   "#83af9b",
+// ];
 
 export default function SplashScreen({ onNext }: { onNext: () => void }) {
   const [username, setUsername] = useState("");
@@ -56,19 +58,15 @@ export default function SplashScreen({ onNext }: { onNext: () => void }) {
           onValueChange={setSelectedColor}
           className="grid grid-cols-5 gap-2 mt-2"
         >
-          {colors.map((color) => (
-            <div key={color.value} className="flex items-center space-x-2">
-              <RadioGroupItem
-                value={color.value}
-                id={color.value}
-                className="sr-only"
-              />
+          {niceColors.map((color) => (
+            <div key={color} className="flex items-center space-x-2">
+              <RadioGroupItem value={color} id={color} className="sr-only" />
               <Label
-                htmlFor={color.value}
+                htmlFor={color}
                 className="w-8 h-8 rounded-full cursor-pointer flex items-center justify-center"
-                style={{ backgroundColor: color.value }}
+                style={{ backgroundColor: color }}
               >
-                {selectedColor === color.value && (
+                {selectedColor === color && (
                   <div className="w-4 h-4 bg-white rounded-full" />
                 )}
               </Label>

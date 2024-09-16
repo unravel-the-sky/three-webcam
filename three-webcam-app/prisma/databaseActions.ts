@@ -99,3 +99,31 @@ export const updatePlayerInDbById = async (id: string, state: boolean) => {
         }
     }
 }
+
+export const deleteAllPlayersInDb = async () => {
+    try {
+        const res = await prisma.player.deleteMany()
+        return res
+    } catch(err) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError) {
+            console.error('error happened in gellAllPostsInDb: ', err.message)
+        }
+    }
+}
+
+export const deletePlayerByIdInDb = async (id: string) => {
+    try {
+        const res = await prisma.player.deleteMany(
+            {
+                where: {
+                    id
+                }
+            }
+        )
+        return res
+    } catch(err) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError) {
+            console.error('error happened in gellAllPostsInDb: ', err.message)
+        }
+    }
+}

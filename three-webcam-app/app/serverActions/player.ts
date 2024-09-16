@@ -1,8 +1,6 @@
 'use server'
 
-import { getAllJumpingPlayersInDb, getAllPlayersInDb, pollAllPlayersInDb, updatePlayerInDbById } from "@/prisma/databaseActions"
-import { Player } from "@prisma/client";
-import { cookies } from "next/headers";
+import { deleteAllPlayersInDb, deletePlayerByIdInDb, getAllJumpingPlayersInDb, getAllPlayersInDb, pollAllPlayersInDb, updatePlayerInDbById } from "@/prisma/databaseActions";
 
 export const getAllPlayers = async () => {
     const res = await getAllPlayersInDb();
@@ -21,5 +19,13 @@ export const jumpPlayerById = async (id: string, state: boolean) => {
 
 export const getJumpingPlayers = async () => {
     const res = await getAllJumpingPlayersInDb()
+    return res;
+}
+export const deleteAllPlayers = async () => {
+    const res = await deleteAllPlayersInDb()
+    return res;
+}
+export const deletePlayerById = async (id: string) => {
+    const res = await deletePlayerByIdInDb(id)
     return res;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  deleteAllPlayers,
   getAllPlayers,
   getJumpingPlayers,
   pollAllPlayers,
@@ -67,8 +68,6 @@ export default function PlayerList() {
 
   const buttonText = isPolling ? "stop polling" : "start polling";
 
-  console.log("playerData: ", data);
-
   const togglePolling = () => {
     setCurrentTime(Date.now());
     setIsPolling(!isPolling);
@@ -80,6 +79,7 @@ export default function PlayerList() {
 
   const handleDeleteAll = () => {
     // todo
+    deleteAllPlayers();
   };
 
   return (

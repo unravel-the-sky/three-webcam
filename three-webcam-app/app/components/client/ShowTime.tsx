@@ -92,7 +92,7 @@ const Scene = ({ players }: ShowTimeProps) => {
               username={username}
               position={[
                 (Math.random() - 0.5) * 4,
-                10 + index * 4,
+                (10 + index * 4) % 80,
                 Math.random() - 0.5,
               ]}
               // position={boxes[index]}

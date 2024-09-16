@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import SplashScreen from "./SplashScreen";
-import TakePhoto from "./TakePhoto";
+import { submitForm } from "@/app/serverActions/fileUpload";
+import { jumpPlayerById } from "@/app/serverActions/player";
 import useUserStore from "@/app/store/userStore";
 import { Button } from "@/components/ui/button";
-import Confirm from "./Confirm";
-import { submitForm } from "@/app/serverActions/fileUpload";
-import Image from "next/image";
 import { Player } from "@prisma/client";
-import { jumpPlayerById } from "@/app/serverActions/player";
+import { useEffect, useState, useTransition } from "react";
+import Confirm from "./Confirm";
+import SplashScreen from "./SplashScreen";
+import TakePhoto from "./TakePhoto";
 
 const dataURIToBlob = (dataURI: string) => {
   const splitDataURI = dataURI.split(",");
@@ -31,7 +30,7 @@ export default function AppWrapper() {
   const [username, setUsername] = useState("");
 
   const userStore = useUserStore();
-  const { user } = userStore;
+  const { user, setUser } = userStore;
 
   const handleNext = () => {
     setStep(step + 1);
@@ -83,6 +82,11 @@ export default function AppWrapper() {
     localStorage.removeItem("username");
     setUserId("");
     setUsername("");
+    setUser({
+      color: "",
+      username: "",
+      image: "",
+    });
   };
 
   return (
