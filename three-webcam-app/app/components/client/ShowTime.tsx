@@ -16,7 +16,6 @@ import { useChannel } from "ably/react";
 import { useControls } from "leva";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { JumpDirection } from "./AppWrapper";
 
 interface ShowTimeProps {
   players: Player[];
@@ -340,8 +339,6 @@ interface PhyBoxProps {
   mass: number;
 }
 
-const maxJumps = 5;
-const cooldownTime = 2000;
 const PhyBox = (props: PhyBoxProps) => {
   const size = 2;
   const [ref, api] = useBox<THREE.Mesh>(() => ({
@@ -359,12 +356,10 @@ const PhyBox = (props: PhyBoxProps) => {
     val: false,
   });
 
-  const { channel } = useChannel(CHANNEL_NAME, "jump", (message) => {
-    const { data: jumpData } = message;
-    const { playerId } = jumpData;
-    const direction = jumpData.direction as JumpDirection;
-
-    if (playerId === props.id) {
+  const { data } = usePlayerStore();
+  useEffect(() => {
+    const { jumpingPlayerId, direction } = data;
+    if (jumpingPlayerId === props.id) {
       switch (direction) {
         case "left":
           api.applyImpulse([0, 40, 30], [0, 0, 0]);
@@ -381,7 +376,7 @@ const PhyBox = (props: PhyBoxProps) => {
           break;
       }
     }
-  });
+  }, [api, data, props.id]);
 
   return (
     <>

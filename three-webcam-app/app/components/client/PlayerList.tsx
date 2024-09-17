@@ -12,6 +12,8 @@ import { useChannel } from "ably/react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import ShowTime from "./ShowTime";
+import { JumpDirection } from "./AppWrapper";
+import usePlayerStore from "@/app/store/playerStore";
 
 export default function PlayerList() {
   const [isPolling, setIsPolling] = useState(false);
@@ -51,6 +53,15 @@ export default function PlayerList() {
     const { data } = message;
     const playerId = data.playerId as string;
     setPlayers((players) => players.filter((item) => item.id !== playerId));
+  });
+
+  const { setData } = usePlayerStore();
+
+  const { channel } = useChannel(CHANNEL_NAME, "jump", (message) => {
+    const { data: jumpData } = message;
+    const { playerId } = jumpData;
+    const direction = jumpData.direction as JumpDirection;
+    setData({ jumpingPlayerId: playerId, direction });
   });
 
   const buttonText = isPolling ? "stop polling" : "start polling";

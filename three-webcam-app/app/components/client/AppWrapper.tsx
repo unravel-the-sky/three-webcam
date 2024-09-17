@@ -30,7 +30,7 @@ const dataURIToBlob = (dataURI: string) => {
 const maxJumps = 10;
 const cooldownTime = 2000;
 
-export type JumpDirection = "left" | "up" | "right";
+export type JumpDirection = "left" | "up" | "right" | "down" | "jump";
 
 export default function AppWrapper() {
   const [step, setStep] = useState(1);

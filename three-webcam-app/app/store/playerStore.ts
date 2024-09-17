@@ -1,7 +1,9 @@
 import { create } from "zustand";
+import { JumpDirection } from "../components/client/AppWrapper";
 
 export type PlayerListType = {
-    imgList: string[]
+    jumpingPlayerId: string;
+    direction: JumpDirection
 }
 
 export type PlayerStore = {
@@ -11,7 +13,8 @@ export type PlayerStore = {
 
 const usePlayerStore = create<PlayerStore>((set, get) => ({
     data: {
-        imgList: ['']
+        jumpingPlayerId: '',
+        direction: 'left'
     },
     setData: (payload: PlayerListType) => set(
         (state) => (
