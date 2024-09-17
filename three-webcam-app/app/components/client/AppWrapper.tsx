@@ -37,6 +37,7 @@ export default function AppWrapper() {
   const [userId, setUserId] = useState("");
   const [username, setUsername] = useState("");
   const [color, setColor] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const [jumpCount, setJumpCount] = useState(0);
   const [isCooldown, setIsCooldown] = useState(false);
@@ -79,22 +80,11 @@ export default function AppWrapper() {
     }
   });
 
-  // useChannel(CHANNEL_NAME, "cooldown", (message) => {
-  //   console.log("cooldown event!");
-  //   const { data } = message;
-  //   const cooldownId = data.playerId as string;
-  //   if (cooldownId === userId) {
-  //     console.log("cooldown bro");
-  //     setTimeout(() => {
-  //       setCooldown(false);
-  //     }, 2000);
-  //     setCooldown(true);
-  //   }
-  // });
-
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
+    setLoading(true);
+
     const userId = localStorage.getItem("userId");
     if (userId) setUserId(userId);
 
@@ -103,6 +93,8 @@ export default function AppWrapper() {
 
     const color = localStorage.getItem("userColor");
     if (color) setColor(`bg-[${color}] w-24 h-8`);
+
+    setLoading(false);
   }, []);
 
   const handleUpload = async () => {
@@ -141,6 +133,8 @@ export default function AppWrapper() {
       image: "",
     });
   };
+
+  if (loading) return <div>loading..</div>;
 
   return (
     <div className="flex items-center justify-center flex-col gap-2 overflow-y-hidden">
