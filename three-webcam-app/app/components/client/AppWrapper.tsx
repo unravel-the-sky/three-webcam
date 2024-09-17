@@ -27,6 +27,9 @@ const dataURIToBlob = (dataURI: string) => {
   return new Blob([ia], { type: mimeString });
 };
 
+const maxJumps = 10;
+const cooldownTime = 2000;
+
 export type JumpDirection = "left" | "up" | "right";
 
 export default function AppWrapper() {
@@ -34,6 +37,9 @@ export default function AppWrapper() {
   const [userId, setUserId] = useState("");
   const [username, setUsername] = useState("");
   const [color, setColor] = useState("");
+
+  const [jumpCount, setJumpCount] = useState(0);
+  const [isCooldown, setIsCooldown] = useState(false);
 
   const userStore = useUserStore();
   const { user, setUser } = userStore;
@@ -44,6 +50,23 @@ export default function AppWrapper() {
 
   const { publish } = useChannel(CHANNEL_NAME);
   const handleJumpPlayer = (direction: JumpDirection) => {
+    if (isCooldown || jumpCount >= maxJumps) {
+      console.log("sorry bro cooldown a bit");
+      setIsCooldown(true);
+      return;
+    }
+
+    // Increment jump count
+    setJumpCount(jumpCount + 1);
+
+    // If maximum jump count is reached, trigger cooldown
+    if (jumpCount + 1 >= maxJumps) {
+      setIsCooldown(true);
+      setTimeout(() => {
+        setJumpCount(0); // Reset jump count after cooldown
+        setIsCooldown(false);
+      }, cooldownTime);
+    }
     publish("jump", { playerId: userId, direction });
   };
 
@@ -55,8 +78,6 @@ export default function AppWrapper() {
       console.log("connngratulatu");
     }
   });
-
-  const [cooldown, setCooldown] = useState(false);
 
   // useChannel(CHANNEL_NAME, "cooldown", (message) => {
   //   console.log("cooldown event!");
@@ -127,9 +148,9 @@ export default function AppWrapper() {
         <div className=" flex flex-col gap-4 items-center relative">
           <h4>hey {username}</h4>
           <div className={color}></div>
-          {cooldown && (
+          {isCooldown && (
             <p className="animate-ping duration-1000 text-sm absolute top-16">
-              cooldown pls!
+              Cooldown pls!
             </p>
           )}
           <div className="mt-12 flex gap-4">
@@ -139,7 +160,7 @@ export default function AppWrapper() {
                 variant={"blue"}
                 onClick={() => handleJumpPlayer("left")}
                 className="shadow-lg text-lg w-fit"
-                disabled={cooldown}
+                disabled={isCooldown}
               >
                 <ArrowBigLeft className="rotate-45" />
               </Button>
@@ -150,7 +171,7 @@ export default function AppWrapper() {
                 variant={"blue"}
                 onClick={() => handleJumpPlayer("up")}
                 className="shadow-lg text-lg w-fit"
-                disabled={cooldown}
+                disabled={isCooldown}
               >
                 <ArrowBigUp />
               </Button>
@@ -161,7 +182,7 @@ export default function AppWrapper() {
                 variant={"blue"}
                 onClick={() => handleJumpPlayer("right")}
                 className="shadow-lg text-lg w-fit"
-                disabled={cooldown}
+                disabled={isCooldown}
               >
                 <ArrowBigRight className="rotate-[-45deg]" />
               </Button>

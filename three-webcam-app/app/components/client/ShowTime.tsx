@@ -14,7 +14,7 @@ import { Box, OrbitControls, Plane, Text } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useChannel } from "ably/react";
 import { useControls } from "leva";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { JumpDirection } from "./AppWrapper";
 
@@ -99,7 +99,7 @@ const Scene = ({ players }: ShowTimeProps) => {
       <Physics broadphase="SAP" gravity={[0, -50, 0]} allowSleep>
         <PhyPlane
           color="lightblue"
-          position={[0, -2, 4]}
+          position={[0, 0, 0]}
           rotation={[-Math.PI / 2, 0, 0]}
         />
         {players.map(({ image, id, color, username }, index) => (
@@ -118,7 +118,7 @@ const Scene = ({ players }: ShowTimeProps) => {
             ]}
           />
         ))}
-        <PhyWall
+        {/* <PhyWall
           position={[0, 10, -30]}
           args={[1, 40, 90]}
           rotation={[0, Math.PI / 2, 0]}
@@ -129,41 +129,113 @@ const Scene = ({ players }: ShowTimeProps) => {
           args={[1, 90, 90]}
           rotation={[0, 0, Math.PI / 2]}
           visible={wall.visible}
-        />
-        <group
+        /> */}
+        {/* <group
           name="boundaries"
           position={[0, 0, 40]}
           visible={boundary.visible}
         >
-          {/* <PhyWall
+          <PhyWall
             position={[0, 10, -90]}
             args={[0.2, 190, 90]}
             rotation={[0, Math.PI / 2, 0]}
             visible={true}
-          /> */}
+          />
           <PhyWall
             position={[-45, 10, -45]}
             args={[0.2, 190, 90]}
             rotation={[0, 0, 0]}
             visible={true}
           />
-          {/* <PhyWall
-            position={[0, 10, 0]}
+          <PhyWall
+            position={[0, 10, 30]}
             args={[0.2, 190, 90]}
             rotation={[0, Math.PI / 2, 0]}
             visible={true}
-          /> */}
+          />
           <PhyWall
             position={[45, 10, -45]}
             args={[0.2, 190, 90]}
             rotation={[0, 0, 0]}
             visible={true}
           />
-        </group>
+        </group> */}
+        <PhyLevelBox
+          color="red"
+          position={[0, 25, -30]}
+          args={[40, 2, 30]}
+          rotation={[0, 0, 0]}
+          visible={wall.visible}
+        />
+        <PhyLevelBox
+          color="red"
+          position={[0, 45, 30]}
+          args={[40, 2, 30]}
+          rotation={[0, 0, 0]}
+          visible={wall.visible}
+        />
+        <PhyLevelBox
+          color="red"
+          position={[0, 65, -30]}
+          args={[40, 2, 30]}
+          rotation={[0, 0, 0]}
+          visible={wall.visible}
+        />
       </Physics>
       <ambientLight intensity={1} />
       <directionalLight />
     </>
+  );
+};
+
+const PhyLevelBox = ({
+  args = [1, 1, 1],
+  position,
+  rotation = [0, 0, 0],
+  visible,
+  color,
+}: Pick<BoxProps, "args" | "position" | "rotation"> & {
+  visible: boolean;
+  color: string;
+}) => {
+  const { publish } = useChannel(CHANNEL_NAME);
+  const [changed, setChanged] = useState(false);
+
+  const matRef = useRef<THREE.MeshStandardMaterial>(null!);
+
+  const [ref, api] = useBox(
+    () => ({
+      args: args,
+      mass: 0,
+      position,
+      rotation,
+      onCollide: (e) => {
+        const hitObject = e.contact.bi;
+        console.log(`${e} hit!`);
+        const { name } = hitObject;
+        console.log(`${name} won!`);
+        if (!changed) {
+          // color = "blue";
+          matRef.current.color = new THREE.Color("blue");
+          setChanged(true);
+        }
+      },
+    }),
+    useRef<THREE.Mesh>(null)
+  );
+
+  return (
+    <Box
+      args={args}
+      ref={ref}
+      position={position}
+      rotation={rotation}
+      receiveShadow
+      castShadow
+      visible={visible}
+    >
+      <meshStandardMaterial ref={matRef} color={color} />
+    </Box>
   );
 };
 
@@ -287,21 +359,10 @@ const PhyBox = (props: PhyBoxProps) => {
     val: false,
   });
 
-  const [jumpCount, setJumpCount] = useState(0);
-  const [isCooldown, setIsCooldown] = useState(false);
-
-  const { publish } = useChannel(CHANNEL_NAME);
-
   const { channel } = useChannel(CHANNEL_NAME, "jump", (message) => {
     const { data: jumpData } = message;
     const { playerId } = jumpData;
     const direction = jumpData.direction as JumpDirection;
-
-    // if (isCooldown || jumpCount >= maxJumps) {
-    //   console.log("sorry bro cooldown a bit");
-    //   publish("cooldown", { playerId: playerId });
-    //   return;
-    // }
 
     if (playerId === props.id) {
       switch (direction) {
@@ -319,24 +380,8 @@ const PhyBox = (props: PhyBoxProps) => {
         default:
           break;
       }
-
-      // // Increment jump count
-      // setJumpCount(jumpCount + 1);
-
-      // // If maximum jump count is reached, trigger cooldown
-      // if (jumpCount + 1 >= maxJumps) {
-      //   setIsCooldown(true);
-      //   setTimeout(() => {
-      //     setJumpCount(0); // Reset jump count after cooldown
-      //     setIsCooldown(false);
-      //   }, cooldownTime);
-      // }
     }
   });
-
-  // api.velocity.subscribe(() => {
-  //   api.angularVelocity.set(0, 0, 0);
-  // });
 
   return (
     <>
@@ -344,6 +389,7 @@ const PhyBox = (props: PhyBoxProps) => {
         args={[size, size, size]}
         ref={ref}
         name={props.id}
+        userData={{ color: props.color }}
         onClick={() => {
           api.applyImpulse(
             // [(Math.random() - 0.5) * 10, Math.random() * 50, 0],
