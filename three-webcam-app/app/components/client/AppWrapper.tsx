@@ -56,6 +56,21 @@ export default function AppWrapper() {
     }
   });
 
+  const [cooldown, setCooldown] = useState(false);
+
+  // useChannel(CHANNEL_NAME, "cooldown", (message) => {
+  //   console.log("cooldown event!");
+  //   const { data } = message;
+  //   const cooldownId = data.playerId as string;
+  //   if (cooldownId === userId) {
+  //     console.log("cooldown bro");
+  //     setTimeout(() => {
+  //       setCooldown(false);
+  //     }, 2000);
+  //     setCooldown(true);
+  //   }
+  // });
+
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -109,9 +124,14 @@ export default function AppWrapper() {
   return (
     <div className="flex items-center justify-center flex-col gap-2 overflow-y-hidden">
       {userId ? (
-        <div className=" flex flex-col gap-4 items-center">
+        <div className=" flex flex-col gap-4 items-center relative">
           <h4>hey {username}</h4>
           <div className={color}></div>
+          {cooldown && (
+            <p className="animate-ping duration-1000 text-sm absolute top-16">
+              cooldown pls!
+            </p>
+          )}
           <div className="mt-12 flex gap-4">
             <div>
               <div className="text-sm">jump left</div>
@@ -119,6 +139,7 @@ export default function AppWrapper() {
                 variant={"blue"}
                 onClick={() => handleJumpPlayer("left")}
                 className="shadow-lg text-lg w-fit"
+                disabled={cooldown}
               >
                 <ArrowBigLeft className="rotate-45" />
               </Button>
@@ -128,7 +149,8 @@ export default function AppWrapper() {
               <Button
                 variant={"blue"}
                 onClick={() => handleJumpPlayer("up")}
-                className="shadow-lg text-lg w-fit "
+                className="shadow-lg text-lg w-fit"
+                disabled={cooldown}
               >
                 <ArrowBigUp />
               </Button>
@@ -139,6 +161,7 @@ export default function AppWrapper() {
                 variant={"blue"}
                 onClick={() => handleJumpPlayer("right")}
                 className="shadow-lg text-lg w-fit"
+                disabled={cooldown}
               >
                 <ArrowBigRight className="rotate-[-45deg]" />
               </Button>

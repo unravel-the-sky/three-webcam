@@ -73,19 +73,26 @@ export default function ShowTime({ players }: ShowTimeProps) {
 // ]}
 const Scene = ({ players }: ShowTimeProps) => {
   const boxes = useMemo(() => {
-    const gap = 2;
-    const size = 1;
+    const gap = 3;
+    const size = 4;
     const dimension = 4;
     const positions = [];
     for (let x = 0; x < dimension; x++) {
       for (let y = 0; y < dimension; y++) {
         for (let z = 0; z < dimension; z++) {
-          positions.push([x * gap, y * gap + 5, z * gap]);
+          positions.push([x * gap, y * gap, z * gap]);
         }
       }
     }
     return positions;
   }, []);
+
+  const wall = useControls("the Wall", {
+    visible: false,
+  });
+  const boundary = useControls("Boundary box", {
+    visible: false,
+  });
 
   return (
     <>
@@ -103,6 +110,7 @@ const Scene = ({ players }: ShowTimeProps) => {
             key={id}
             username={username}
             mass={5}
+            // position={boxes[index]}
             position={[
               (Math.random() - 0.5) * 4,
               10 + (players.length - index) * 4,
@@ -111,15 +119,47 @@ const Scene = ({ players }: ShowTimeProps) => {
           />
         ))}
         <PhyWall
-          position={[2, 10, -20]}
-          args={[1, 30, 90]}
+          position={[0, 10, -30]}
+          args={[1, 40, 90]}
           rotation={[0, Math.PI / 2, 0]}
+          visible={wall.visible}
         />
         <PhyWallFloor
-          position={[0, -1, -65]}
+          position={[0, -1, -75]}
           args={[1, 90, 90]}
           rotation={[0, 0, Math.PI / 2]}
+          visible={wall.visible}
         />
+        <group
+          name="boundaries"
+          position={[0, 0, 40]}
+          visible={boundary.visible}
+        >
+          {/* <PhyWall
+            position={[0, 10, -90]}
+            args={[0.2, 190, 90]}
+            rotation={[0, Math.PI / 2, 0]}
+            visible={true}
+          /> */}
+          <PhyWall
+            position={[-45, 10, -45]}
+            args={[0.2, 190, 90]}
+            rotation={[0, 0, 0]}
+            visible={true}
+          />
+          {/* <PhyWall
+            position={[0, 10, 0]}
+            args={[0.2, 190, 90]}
+            rotation={[0, Math.PI / 2, 0]}
+            visible={true}
+          /> */}
+          <PhyWall
+            position={[45, 10, -45]}
+            args={[0.2, 190, 90]}
+            rotation={[0, 0, 0]}
+            visible={true}
+          />
+        </group>
       </Physics>
       <ambientLight intensity={1} />
       <directionalLight />
@@ -148,7 +188,8 @@ const PhyWall = ({
   args = [1, 1, 1],
   position,
   rotation = [0, 0, 0],
-}: Pick<BoxProps, "args" | "position" | "rotation">) => {
+  visible,
+}: Pick<BoxProps, "args" | "position" | "rotation"> & { visible: boolean }) => {
   const [ref, api] = useBox(
     () => ({
       args: args,
@@ -159,10 +200,6 @@ const PhyWall = ({
     useRef<THREE.Mesh>(null)
   );
 
-  const wall = useControls("the Wall", {
-    visible: false,
-  });
-
   return (
     <Box
       args={args}
@@ -171,7 +208,7 @@ const PhyWall = ({
       rotation={rotation}
       receiveShadow
       castShadow
-      visible={wall.visible}
+      visible={visible}
     >
       <meshNormalMaterial />
     </Box>
@@ -182,7 +219,8 @@ const PhyWallFloor = ({
   args = [1, 1, 1],
   position,
   rotation = [0, 0, 0],
-}: Pick<BoxProps, "args" | "position" | "rotation">) => {
+  visible,
+}: Pick<BoxProps, "args" | "position" | "rotation"> & { visible: boolean }) => {
   const { publish } = useChannel(CHANNEL_NAME);
   const [announced, setAnnounced] = useState(false);
 
@@ -205,10 +243,6 @@ const PhyWallFloor = ({
     useRef<THREE.Mesh>(null)
   );
 
-  const wall = useControls("the Wall", {
-    visible: false,
-  });
-
   return (
     <Box
       args={args}
@@ -217,7 +251,7 @@ const PhyWallFloor = ({
       rotation={rotation}
       receiveShadow
       castShadow
-      visible={wall.visible}
+      visible={visible}
     >
       <meshNormalMaterial />
     </Box>
@@ -234,11 +268,14 @@ interface PhyBoxProps {
   mass: number;
 }
 
+const maxJumps = 5;
+const cooldownTime = 2000;
 const PhyBox = (props: PhyBoxProps) => {
   const size = 2;
   const [ref, api] = useBox<THREE.Mesh>(() => ({
     args: [size, size, size],
     allowSleep: true,
+    angularDamping: 0.95,
     ...props,
   }));
   const colorMap = props.imgUrl
@@ -250,28 +287,56 @@ const PhyBox = (props: PhyBoxProps) => {
     val: false,
   });
 
+  const [jumpCount, setJumpCount] = useState(0);
+  const [isCooldown, setIsCooldown] = useState(false);
+
+  const { publish } = useChannel(CHANNEL_NAME);
+
   const { channel } = useChannel(CHANNEL_NAME, "jump", (message) => {
-    console.log("msg: ", message);
     const { data: jumpData } = message;
     const { playerId } = jumpData;
     const direction = jumpData.direction as JumpDirection;
 
+    // if (isCooldown || jumpCount >= maxJumps) {
+    //   console.log("sorry bro cooldown a bit");
+    //   publish("cooldown", { playerId: playerId });
+    //   return;
+    // }
+
     if (playerId === props.id) {
       switch (direction) {
         case "left":
-          api.applyImpulse([0, 0, 30], [0, 0, 0]);
-          return;
+          api.applyImpulse([0, 40, 30], [0, 0, 0]);
+          // api.angularVelocity.set(0, 0, 0);
+          break;
         case "up":
           api.applyImpulse([0, 75, 0], [0, 0, 0]);
-          return;
+          break;
         case "right":
-          api.applyImpulse([0, 0, -30], [0, 0, 0]);
-          return;
+          api.applyImpulse([0, 40, -30], [0, 0, 0]);
+          // api.angularVelocity.set(0, 0, 0);
+          break;
         default:
-          return;
+          break;
       }
+
+      // // Increment jump count
+      // setJumpCount(jumpCount + 1);
+
+      // // If maximum jump count is reached, trigger cooldown
+      // if (jumpCount + 1 >= maxJumps) {
+      //   setIsCooldown(true);
+      //   setTimeout(() => {
+      //     setJumpCount(0); // Reset jump count after cooldown
+      //     setIsCooldown(false);
+      //   }, cooldownTime);
+      // }
     }
   });
+
+  // api.velocity.subscribe(() => {
+  //   api.angularVelocity.set(0, 0, 0);
+  // });
 
   return (
     <>
