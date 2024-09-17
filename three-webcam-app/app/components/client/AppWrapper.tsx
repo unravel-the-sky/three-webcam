@@ -1,17 +1,23 @@
 "use client";
 
 import { submitForm } from "@/app/serverActions/fileUpload";
-import { deletePlayerById, jumpPlayerById } from "@/app/serverActions/player";
+import { deletePlayerById } from "@/app/serverActions/player";
 import useUserStore from "@/app/store/userStore";
+import { CHANNEL_NAME } from "@/app/utils";
 import { Button } from "@/components/ui/button";
 import { Player } from "@prisma/client";
+import { useChannel } from "ably/react";
+import {
+  ArrowBigDown,
+  ArrowBigLeft,
+  ArrowBigRight,
+  ArrowBigUp,
+  Bomb,
+} from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import Confirm from "./Confirm";
 import SplashScreen from "./SplashScreen";
 import TakePhoto from "./TakePhoto";
-import { CHANNEL_NAME } from "@/app/utils";
-import { useChannel } from "ably/react";
-import { ArrowBigLeft, ArrowBigRight, ArrowBigUp } from "lucide-react";
 
 const dataURIToBlob = (dataURI: string) => {
   const splitDataURI = dataURI.split(",");
@@ -147,39 +153,37 @@ export default function AppWrapper() {
               Cooldown pls!
             </p>
           )}
-          <div className="mt-12 flex gap-4">
-            <div>
-              <div className="text-sm">jump left</div>
-              <Button
-                variant={"blue"}
-                onClick={() => handleJumpPlayer("left")}
-                className="shadow-lg text-lg w-fit"
-                disabled={isCooldown}
-              >
-                <ArrowBigLeft className="rotate-45" />
-              </Button>
+          <div className="mt-12 flex flex-col gap-4">
+            <div className="flex w-full justify-center">
+              <PlayerButton
+                direction="up"
+                onJumpPlayer={handleJumpPlayer}
+                isCooldown={isCooldown}
+              />
             </div>
-            <div className="mt-[-1rem]">
-              <div className="text-sm">jump up</div>
-              <Button
-                variant={"blue"}
-                onClick={() => handleJumpPlayer("up")}
-                className="shadow-lg text-lg w-fit"
-                disabled={isCooldown}
-              >
-                <ArrowBigUp />
-              </Button>
+            <div className="flex gap-4 items-center">
+              <PlayerButton
+                direction="left"
+                onJumpPlayer={handleJumpPlayer}
+                isCooldown={isCooldown}
+              />
+              <PlayerButton
+                direction="jump"
+                onJumpPlayer={handleJumpPlayer}
+                isCooldown={isCooldown}
+              />
+              <PlayerButton
+                direction="right"
+                onJumpPlayer={handleJumpPlayer}
+                isCooldown={isCooldown}
+              />
             </div>
-            <div>
-              <div className="text-sm">jump right</div>
-              <Button
-                variant={"blue"}
-                onClick={() => handleJumpPlayer("right")}
-                className="shadow-lg text-lg w-fit"
-                disabled={isCooldown}
-              >
-                <ArrowBigRight className="rotate-[-45deg]" />
-              </Button>
+            <div className="flex w-full justify-center">
+              <PlayerButton
+                direction="down"
+                onJumpPlayer={handleJumpPlayer}
+                isCooldown={isCooldown}
+              />
             </div>
           </div>
           <Button
@@ -206,3 +210,31 @@ export default function AppWrapper() {
     </div>
   );
 }
+
+const PlayerButton = ({
+  direction,
+  isCooldown,
+  onJumpPlayer,
+}: {
+  direction: JumpDirection;
+  isCooldown: boolean;
+  onJumpPlayer: (direction: JumpDirection) => void;
+}) => {
+  return (
+    <div>
+      {/* <div className="text-sm">jump left</div> */}
+      <Button
+        variant={"blue"}
+        onClick={() => onJumpPlayer(direction)}
+        className="shadow-lg text-lg w-fit h-fit"
+        disabled={isCooldown}
+      >
+        {direction === "left" && <ArrowBigLeft />}
+        {direction === "right" && <ArrowBigRight />}
+        {direction === "up" && <ArrowBigUp />}
+        {direction === "down" && <ArrowBigDown />}
+        {direction === "jump" && <Bomb size={40} />}
+      </Button>
+    </div>
+  );
+};

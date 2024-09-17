@@ -180,6 +180,13 @@ const Scene = ({ players }: ShowTimeProps) => {
           rotation={[0, 0, 0]}
           visible={wall.visible}
         />
+        <PhyLevelBox
+          color="green"
+          position={[0, 90, -80]}
+          args={[40, 2, 60]}
+          rotation={[0, 0, 0]}
+          visible={wall.visible}
+        />
       </Physics>
       <ambientLight intensity={1} />
       <directionalLight />
@@ -209,14 +216,22 @@ const PhyLevelBox = ({
       position,
       rotation,
       onCollide: (e) => {
-        const hitObject = e.contact.bi;
-        console.log(`${e} hit!`);
-        const { name } = hitObject;
-        console.log(`${name} won!`);
-        if (!changed) {
-          // color = "blue";
-          matRef.current.color = new THREE.Color("blue");
-          setChanged(true);
+        const boxPosition = e.body.position; // Position of the box
+        const rectanglePosition = e.target.position; // Position of the rectangle
+
+        // Assuming rectanglePosition.y is the center of the rectangle and rectangleHeight is its height
+        const topOfRectangle = rectanglePosition.y + 2 / 2;
+
+        // If the box is above or just near the top of the rectangle, it's a top collision
+        if (true) {
+          console.log("Box hit the top of the rectangle!");
+          const hitObject = e.contact.bi;
+          const { name } = hitObject;
+          console.log(`${name} hit!`);
+          if (!changed) {
+            matRef.current.color = new THREE.Color("blue");
+            setChanged(true);
+          }
         }
       },
     }),
@@ -365,11 +380,19 @@ const PhyBox = (props: PhyBoxProps) => {
           api.applyImpulse([0, 40, 30], [0, 0, 0]);
           // api.angularVelocity.set(0, 0, 0);
           break;
-        case "up":
+        case "jump":
           api.applyImpulse([0, 75, 0], [0, 0, 0]);
           break;
         case "right":
           api.applyImpulse([0, 40, -30], [0, 0, 0]);
+          // api.angularVelocity.set(0, 0, 0);
+          break;
+        case "up":
+          api.applyImpulse([-30, 40, 0], [0, 0, 0]);
+          // api.angularVelocity.set(0, 0, 0);
+          break;
+        case "down":
+          api.applyImpulse([30, 40, 0], [0, 0, 0]);
           // api.angularVelocity.set(0, 0, 0);
           break;
         default:
