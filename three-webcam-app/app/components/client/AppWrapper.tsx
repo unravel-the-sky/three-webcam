@@ -15,7 +15,6 @@ import {
   Bomb,
 } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
-import Confirm from "./Confirm";
 import SplashScreen from "./SplashScreen";
 import TakePhoto from "./TakePhoto";
 
@@ -57,17 +56,17 @@ export default function AppWrapper() {
 
   const { publish } = useChannel(CHANNEL_NAME);
   const handleJumpPlayer = (direction: JumpDirection) => {
-    if (isCooldown || jumpCount >= maxJumps) {
+    if (isCooldown || (direction === "jump" && jumpCount >= maxJumps)) {
       console.log("sorry bro cooldown a bit");
       setIsCooldown(true);
       return;
     }
 
     // Increment jump count
-    setJumpCount(jumpCount + 1);
+    direction === "jump" && setJumpCount(jumpCount + 1);
 
     // If maximum jump count is reached, trigger cooldown
-    if (jumpCount + 1 >= maxJumps) {
+    if (jumpCount + 1 >= maxJumps && direction === "jump") {
       setIsCooldown(true);
       setTimeout(() => {
         setJumpCount(0); // Reset jump count after cooldown
@@ -201,8 +200,7 @@ export default function AppWrapper() {
           ) : (
             <>
               {step === 1 && <SplashScreen onNext={handleNext} />}
-              {step === 2 && <TakePhoto onNext={handleNext} />}
-              {step === 3 && <Confirm onConfirm={handleUpload} />}
+              {step === 2 && <TakePhoto onNext={handleUpload} />}
             </>
           )}
         </div>

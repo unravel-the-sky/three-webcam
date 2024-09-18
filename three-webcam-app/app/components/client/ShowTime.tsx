@@ -2,6 +2,7 @@
 
 import usePlayerStore from "@/app/store/playerStore";
 import { CHANNEL_NAME } from "@/app/utils";
+import { Button } from "@/components/ui/button";
 import { Player } from "@prisma/client";
 import {
   BoxProps,
@@ -11,7 +12,7 @@ import {
   usePlane,
 } from "@react-three/cannon";
 import { Box, OrbitControls, Plane, Text } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useChannel } from "ably/react";
 import { useControls } from "leva";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -20,11 +21,12 @@ import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 
 interface ShowTimeProps {
   players: Player[];
+  isGameOn: boolean;
 }
 
 const rgbeLoader = new RGBELoader();
 
-export default function ShowTime({ players }: ShowTimeProps) {
+export default function ShowTime({ players, isGameOn }: ShowTimeProps) {
   const showAxis = useControls("Show axis helper", {
     val: false,
   });
@@ -41,10 +43,6 @@ export default function ShowTime({ players }: ShowTimeProps) {
         className="h-full"
         shadows
         onCreated={({ scene }) => {
-          // scene.background = new THREE.Color("lightblue");
-          // const url = "/andro.jpg";
-          // const backgroundTexture = new THREE.TextureLoader().load(url);
-          // scene.background = backgroundTexture;
           rgbeLoader.load(
             "/environmentMaps/wasteland_clouds_puresky_2k.hdr",
             (environmentMap) => {
@@ -55,11 +53,10 @@ export default function ShowTime({ players }: ShowTimeProps) {
               console.log(environmentMap);
             }
           );
-          // scene.background = new THREE.Color("lightblue");
         }}
       >
         <Lights />
-        <Scene players={players} />
+        <Scene players={players} isGameOn={isGameOn} />
         {showAxis.val && <axesHelper scale={2} args={[5]} />}
         <OrbitControls />
       </Canvas>
@@ -87,7 +84,7 @@ export default function ShowTime({ players }: ShowTimeProps) {
 // Math.random() * 40,
 // (Math.random() - 0.5) * 10,
 // ]}
-const Scene = ({ players }: ShowTimeProps) => {
+const Scene = ({ players, isGameOn }: ShowTimeProps) => {
   const boxes = useMemo(() => {
     const gap = 3;
     const size = 4;
@@ -109,6 +106,39 @@ const Scene = ({ players }: ShowTimeProps) => {
   const boundary = useControls("Boundary box", {
     visible: false,
   });
+
+  const { camera } = useThree(); // Access the camera from the scene
+  const cameraRef = useRef(camera); // Store the reference to the camera
+  const direction = new THREE.Vector3();
+  console.log("im rerendered");
+  camera.getWorldDirection(direction);
+  console.log(
+    "camera: ",
+    camera.position,
+    " looking at: ",
+    direction,
+    " rotation: ",
+    camera.rotation
+  );
+  const gameCameraPos = { x: 154, y: 104, z: -21 };
+  const gameCameraRot = { x: -1.41, y: 1.42, z: 1.41 };
+
+  useEffect(() => {
+    if (isGameOn && cameraRef.current) {
+      // cameraRef.current.position.lerp(gameCameraPos, 0.1);
+      cameraRef.current.position.set(
+        gameCameraPos.x,
+        gameCameraPos.y,
+        gameCameraPos.z
+      );
+      cameraRef.current.lookAt(-0.94, -0.32, 0.0138);
+      cameraRef.current.rotation.set(
+        gameCameraRot.x,
+        gameCameraRot.y,
+        gameCameraRot.z
+      );
+    }
+  }, [isGameOn]);
 
   return (
     <>
@@ -134,48 +164,7 @@ const Scene = ({ players }: ShowTimeProps) => {
             ]}
           />
         ))}
-        {/* <PhyWall
-          position={[0, 10, -30]}
-          args={[1, 40, 90]}
-          rotation={[0, Math.PI / 2, 0]}
-          visible={wall.visible}
-        />
-        <PhyWallFloor
-          position={[0, -1, -75]}
-          args={[1, 90, 90]}
-          rotation={[0, 0, Math.PI / 2]}
-          visible={wall.visible}
-        /> */}
-        {/* <group
-          name="boundaries"
-          position={[0, 0, 40]}
-          visible={boundary.visible}
-        >
-          <PhyWall
-            position={[0, 10, -90]}
-            args={[0.2, 190, 90]}
-            rotation={[0, Math.PI / 2, 0]}
-            visible={true}
-          />
-          <PhyWall
-            position={[-45, 10, -45]}
-            args={[0.2, 190, 90]}
-            rotation={[0, 0, 0]}
-            visible={true}
-          />
-          <PhyWall
-            position={[0, 10, 30]}
-            args={[0.2, 190, 90]}
-            rotation={[0, Math.PI / 2, 0]}
-            visible={true}
-          />
-          <PhyWall
-            position={[45, 10, -45]}
-            args={[0.2, 190, 90]}
-            rotation={[0, 0, 0]}
-            visible={true}
-          />
-        </group> */}
+
         <PhyLevelBox
           color="red"
           position={[0, 25, -30]}
@@ -388,28 +377,59 @@ const PhyBox = (props: PhyBoxProps) => {
     val: false,
   });
 
+  // const [reset, setReset] = useState(false);
+  // const targetRotation = new THREE.Euler(0, 0, 0);
+  // const lerpFactor = 0.95;
+
+  // useFrame((state) => {
+  //   // ref.current?.lookAt(0, 20, 0);
+  //   if (reset && ref.current) {
+  //     const currentRotation = ref.current.rotation;
+  //     currentRotation.x = THREE.MathUtils.lerp(
+  //       currentRotation.x,
+  //       targetRotation.x,
+  //       lerpFactor
+  //     );
+  //     currentRotation.y = THREE.MathUtils.lerp(
+  //       currentRotation.y,
+  //       targetRotation.y,
+  //       lerpFactor
+  //     );
+  //     currentRotation.z = THREE.MathUtils.lerp(
+  //       currentRotation.z,
+  //       targetRotation.z,
+  //       lerpFactor
+  //     );
+
+  //     api.rotation.set(currentRotation.x, currentRotation.y, currentRotation.z);
+
+  //     api.velocity.set(0, 0, 0);
+  //     api.angularVelocity.set(0, 0, 0);
+  //   }
+  // });
+
   const { data } = usePlayerStore();
   useEffect(() => {
     const { jumpingPlayerId, direction } = data;
     if (jumpingPlayerId === props.id) {
       switch (direction) {
         case "left":
-          api.applyImpulse([0, 40, 30], [0, 0, 0]);
+          api.applyImpulse([0, 10, 30], [0, 0, 0]);
           // api.angularVelocity.set(0, 0, 0);
           break;
         case "jump":
-          api.applyImpulse([0, 75, 0], [0, 0, 0]);
+          api.applyImpulse([0, 70, 0], [0, 0, 0]);
           break;
         case "right":
-          api.applyImpulse([0, 40, -30], [0, 0, 0]);
+          api.applyImpulse([0, 10, -30], [0, 0, 0]);
           // api.angularVelocity.set(0, 0, 0);
           break;
         case "up":
-          api.applyImpulse([-30, 40, 0], [0, 0, 0]);
+          api.applyImpulse([-30, 10, 0], [0, 0, 0]);
           // api.angularVelocity.set(0, 0, 0);
           break;
         case "down":
-          api.applyImpulse([30, 40, 0], [0, 0, 0]);
+          api.applyImpulse([30, 10, 0], [0, 0, 0]);
           // api.angularVelocity.set(0, 0, 0);
           break;
         default:
@@ -435,7 +455,12 @@ const PhyBox = (props: PhyBoxProps) => {
         receiveShadow
         castShadow
       >
-        <Text scale={[0.5, 0.5, 0.5]} color="black" position={[0, 1.2, 1.1]}>
+        <Text
+          scale={[0.5, 0.5, 0.5]}
+          color="black"
+          position={[1, 1.3, 0.1]}
+          rotation={[0, Math.PI / 2, 0]}
+        >
           {props.username}
         </Text>
         {showTexture.val ? (
@@ -505,4 +530,33 @@ const Lights = () => {
   );
 };
 
-// PlayerBall component
+const BoundingBox = () => {
+  return (
+    <group name="boundaries" position={[0, 0, 40]} visible={false}>
+      <PhyWall
+        position={[0, 10, -90]}
+        args={[0.2, 190, 90]}
+        rotation={[0, Math.PI / 2, 0]}
+        visible={true}
+      />
+      <PhyWall
+        position={[-45, 10, -45]}
+        args={[0.2, 190, 90]}
+        rotation={[0, 0, 0]}
+        visible={true}
+      />
+      <PhyWall
+        position={[0, 10, 30]}
+        args={[0.2, 190, 90]}
+        rotation={[0, Math.PI / 2, 0]}
+        visible={true}
+      />
+      <PhyWall
+        position={[45, 10, -45]}
+        args={[0.2, 190, 90]}
+        rotation={[0, 0, 0]}
+        visible={true}
+      />
+    </group>
+  );
+};

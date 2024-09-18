@@ -20,6 +20,7 @@ export default function PlayerList() {
   const [players, setPlayers] = useState<Player[]>([]);
 
   const [showTime, setShowTime] = useState(false);
+  const [startGame, setStartGame] = useState(false);
 
   useEffect(() => {
     getAllPlayers().then((res) => {
@@ -64,8 +65,6 @@ export default function PlayerList() {
     setData({ jumpingPlayerId: playerId, direction });
   });
 
-  const buttonText = isPolling ? "stop polling" : "start polling";
-
   const togglePolling = () => {
     setIsPolling(!isPolling);
   };
@@ -79,11 +78,15 @@ export default function PlayerList() {
     deleteAllPlayers();
   };
 
+  const toggleStartGame = () => {
+    setStartGame(!startGame);
+  };
+
   return (
     <>
       {showTime && (
         <div className="fixed w-full left-0 top-0 h-full bg-gray-600 p-4">
-          <ShowTime players={players} />
+          <ShowTime players={players} isGameOn={startGame} />
         </div>
       )}
 
@@ -97,7 +100,14 @@ export default function PlayerList() {
           </Button>
 
           {showTime && (
-            <div className="fixed flex justify-start w-full bottom-8 z-20">
+            <div className="fixed flex justify-start bottom-8 z-20 gap-4">
+              <Button
+                onClick={toggleStartGame}
+                variant={"orange"}
+                className="w-fit"
+              >
+                {startGame ? "stop game" : "start game"}
+              </Button>
               <Button onClick={handleShowTime} className="w-fit">
                 stop the show
               </Button>
