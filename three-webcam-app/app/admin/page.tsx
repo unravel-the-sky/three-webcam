@@ -12,7 +12,7 @@ export default async function AdminPage({
 }) {
   return (
     <main className="flex h-[100vh] flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-      <div>Admin panel</div>
+      <div>Waiting room - React Three Fiber - Demo</div>
       <ChannelWrapper>
         <PlayerList />
       </ChannelWrapper>

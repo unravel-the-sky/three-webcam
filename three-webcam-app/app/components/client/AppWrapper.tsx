@@ -32,7 +32,7 @@ const dataURIToBlob = (dataURI: string) => {
   return new Blob([ia], { type: mimeString });
 };
 
-const maxJumps = 10;
+const maxJumps = 100;
 const cooldownTime = 2000;
 
 export type JumpDirection = "left" | "up" | "right" | "down" | "jump";

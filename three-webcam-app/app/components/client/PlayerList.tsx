@@ -85,7 +85,7 @@ export default function PlayerList() {
   return (
     <>
       {showTime && (
-        <div className="fixed w-full left-0 top-0 h-full bg-gray-600 p-4">
+        <div className="fixed w-full left-0 top-0 h-full bg-gray-600 p-4 z-10">
           <ShowTime players={players} isGameOn={startGame} />
         </div>
       )}
@@ -128,29 +128,7 @@ export default function PlayerList() {
             <div>num players: {players.length}</div>
             <div className="flex flex-wrap gap-4">
               {players.map((player, index) => (
-                <div
-                  key={player.id}
-                  className="flex flex-col p-2 outline-dashed hover:bg-gray-200 hover:-translate-y-2 hover:shadow-lg transition-all"
-                >
-                  <p className="text-sm">username: {player.username}</p>
-                  {player.image ? (
-                    <Image
-                      src={new URL(player.image).toString()}
-                      alt="img"
-                      className="object-cover h-[100px] w-[150px]"
-                      width={150}
-                      height={100}
-                    />
-                  ) : (
-                    <Image
-                      src={"/bugsbunny-square-1.png"}
-                      alt="img"
-                      className="object-cover h-[100px] w-[150px]"
-                      width={150}
-                      height={100}
-                    />
-                  )}
-                </div>
+                <PlayerPicture player={player} key={player.id} />
               ))}
               <div className="mt-4 flex w-full gap-4">
                 <Button onClick={handleShowTime} className="w-fit">
@@ -171,3 +149,45 @@ export default function PlayerList() {
     </>
   );
 }
+
+const PlayerPicture = ({ player }: { player: Player }) => {
+  const { data } = usePlayerStore();
+  const [jump, setJump] = useState(false);
+
+  useEffect(() => {
+    if (data.jumpingPlayerId === player.id) {
+      setJump(true);
+      setTimeout(() => {
+        setJump(false);
+      }, 200);
+    }
+  }, [data]);
+
+  return (
+    <div
+      key={player.id}
+      className={`flex flex-col p-2 outline-dashed hover:bg-gray-200 hover:-translate-y-2 hover:shadow-lg transition-all ${
+        jump && "-translate-y-2"
+      }`}
+    >
+      <p className="text-sm">username: {player.username}</p>
+      {player.image ? (
+        <Image
+          src={new URL(player.image).toString()}
+          alt="img"
+          className="object-cover h-[100px] w-[150px]"
+          width={150}
+          height={100}
+        />
+      ) : (
+        <Image
+          src={"/bugsbunny-square-1.png"}
+          alt="img"
+          className="object-cover h-[100px] w-[150px]"
+          width={150}
+          height={100}
+        />
+      )}
+    </div>
+  );
+};

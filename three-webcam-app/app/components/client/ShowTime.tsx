@@ -131,7 +131,7 @@ const Scene = ({ players, isGameOn }: ShowTimeProps) => {
         gameCameraPos.y,
         gameCameraPos.z
       );
-      cameraRef.current.lookAt(-0.94, -0.32, 0.0138);
+      cameraRef.current.lookAt(-0.64, -0.39, 0.65);
       cameraRef.current.rotation.set(
         gameCameraRot.x,
         gameCameraRot.y,
@@ -458,7 +458,7 @@ const PhyBox = (props: PhyBoxProps) => {
         <Text
           scale={[0.5, 0.5, 0.5]}
           color="black"
-          position={[1, 1.3, 0.1]}
+          position={[1.2, 1.3, 0.1]}
           rotation={[0, Math.PI / 2, 0]}
         >
           {props.username}
