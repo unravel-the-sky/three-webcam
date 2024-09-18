@@ -16,10 +16,13 @@ import { useChannel } from "ably/react";
 import { useControls } from "leva";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 
 interface ShowTimeProps {
   players: Player[];
 }
+
+const rgbeLoader = new RGBELoader();
 
 export default function ShowTime({ players }: ShowTimeProps) {
   const showAxis = useControls("Show axis helper", {
@@ -37,9 +40,23 @@ export default function ShowTime({ players }: ShowTimeProps) {
         }}
         className="h-full"
         shadows
-        onCreated={({ scene }) =>
-          (scene.background = new THREE.Color("lightblue"))
-        }
+        onCreated={({ scene }) => {
+          // scene.background = new THREE.Color("lightblue");
+          // const url = "/andro.jpg";
+          // const backgroundTexture = new THREE.TextureLoader().load(url);
+          // scene.background = backgroundTexture;
+          rgbeLoader.load(
+            "/environmentMaps/wasteland_clouds_puresky_2k.hdr",
+            (environmentMap) => {
+              environmentMap.mapping = THREE.EquirectangularReflectionMapping;
+
+              scene.background = environmentMap;
+              scene.environment = environmentMap;
+              console.log(environmentMap);
+            }
+          );
+          // scene.background = new THREE.Color("lightblue");
+        }}
       >
         <Lights />
         <Scene players={players} />

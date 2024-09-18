@@ -89,18 +89,6 @@ export default function PlayerList() {
 
       <div className="flex flex-col gap-4 flex-1">
         <div className="flex gap-4 z-10">
-          <Button
-            variant={isPolling ? "orange" : "default"}
-            onClick={togglePolling}
-            className="w-fit"
-          >
-            {buttonText}
-          </Button>
-
-          {isPolling && (
-            <p className="animate-ping duration-1000 text-sm">piu</p>
-          )}
-
           <Button onClick={addRandos} className="w-fit">
             add randos
           </Button>
@@ -132,7 +120,7 @@ export default function PlayerList() {
               {players.map((player, index) => (
                 <div
                   key={player.id}
-                  className="flex flex-col p-2 outline-dashed hover:bg-gray-200 hover:shadow-lg transition-all"
+                  className="flex flex-col p-2 outline-dashed hover:bg-gray-200 hover:-translate-y-2 hover:shadow-lg transition-all"
                 >
                   <p className="text-sm">username: {player.username}</p>
                   {player.image ? (
