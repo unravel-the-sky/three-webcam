@@ -64,26 +64,6 @@ export default function ShowTime({ players, isGameOn }: ShowTimeProps) {
   );
 }
 
-// Scene component
-// const radius = 12;
-// const totalCount = 20;
-// const radius = useControls("Shape radius", {
-//   val: 12,
-// });
-// const totalCount = useControls("Total number", {
-//   val: 20,
-// });
-// position={boxes[index]}
-// position={[
-// circular here:
-// radius.val * Math.cos((index / totalCount.val) * Math.PI * 2),
-// Math.random() * 40,
-// radius.val * Math.sin((index / totalCount.val) * Math.PI * 2),
-// helt random here:
-// (Math.random() - 0.5) * 20,
-// Math.random() * 40,
-// (Math.random() - 0.5) * 10,
-// ]}
 const Scene = ({ players, isGameOn }: ShowTimeProps) => {
   const boxes = useMemo(() => {
     const gap = 3;
@@ -107,38 +87,38 @@ const Scene = ({ players, isGameOn }: ShowTimeProps) => {
     visible: false,
   });
 
-  const { camera } = useThree(); // Access the camera from the scene
-  const cameraRef = useRef(camera); // Store the reference to the camera
-  const direction = new THREE.Vector3();
-  console.log("im rerendered");
-  camera.getWorldDirection(direction);
-  console.log(
-    "camera: ",
-    camera.position,
-    " looking at: ",
-    direction,
-    " rotation: ",
-    camera.rotation
-  );
-  const gameCameraPos = { x: 154, y: 104, z: -21 };
-  const gameCameraRot = { x: -1.41, y: 1.42, z: 1.41 };
+  // const { camera } = useThree(); // Access the camera from the scene
+  // const cameraRef = useRef(camera); // Store the reference to the camera
+  // const direction = new THREE.Vector3();
+  // console.log("im rerendered");
+  // camera.getWorldDirection(direction);
+  // console.log(
+  //   "camera: ",
+  //   camera.position,
+  //   " looking at: ",
+  //   direction,
+  //   " rotation: ",
+  //   camera.rotation
+  // );
+  // const gameCameraPos = { x: 154, y: 104, z: -21 };
+  // const gameCameraRot = { x: -1.41, y: 1.42, z: 1.41 };
 
-  useEffect(() => {
-    if (isGameOn && cameraRef.current) {
-      // cameraRef.current.position.lerp(gameCameraPos, 0.1);
-      cameraRef.current.position.set(
-        gameCameraPos.x,
-        gameCameraPos.y,
-        gameCameraPos.z
-      );
-      cameraRef.current.lookAt(-0.64, -0.39, 0.65);
-      cameraRef.current.rotation.set(
-        gameCameraRot.x,
-        gameCameraRot.y,
-        gameCameraRot.z
-      );
-    }
-  }, [isGameOn]);
+  // useEffect(() => {
+  //   if (isGameOn && cameraRef.current) {
+  //     // cameraRef.current.position.lerp(gameCameraPos, 0.1);
+  //     cameraRef.current.position.set(
+  //       gameCameraPos.x,
+  //       gameCameraPos.y,
+  //       gameCameraPos.z
+  //     );
+  //     cameraRef.current.lookAt(-0.64, -0.39, 0.65);
+  //     cameraRef.current.rotation.set(
+  //       gameCameraRot.x,
+  //       gameCameraRot.y,
+  //       gameCameraRot.z
+  //     );
+  //   }
+  // }, [isGameOn]);
 
   return (
     <>
@@ -148,6 +128,7 @@ const Scene = ({ players, isGameOn }: ShowTimeProps) => {
           position={[0, 0, 0]}
           rotation={[-Math.PI / 2, 0, 0]}
         />
+
         {players.map(({ image, id, color, username }, index) => (
           <PhyBox
             imgUrl={image}
@@ -164,39 +145,57 @@ const Scene = ({ players, isGameOn }: ShowTimeProps) => {
             ]}
           />
         ))}
-
+        <SpringSurface visible={isGameOn} />
         <PhyLevelBox
           color="red"
           position={[0, 25, -30]}
           args={[40, 2, 30]}
           rotation={[0, 0, 0]}
-          visible={wall.visible}
+          visible={isGameOn}
         />
         <PhyLevelBox
           color="red"
           position={[0, 45, 30]}
           args={[40, 2, 30]}
           rotation={[0, 0, 0]}
-          visible={wall.visible}
+          visible={isGameOn}
         />
         <PhyLevelBox
           color="red"
           position={[0, 65, -30]}
           args={[40, 2, 30]}
           rotation={[0, 0, 0]}
-          visible={wall.visible}
+          visible={isGameOn}
         />
         <PhyLevelBox
           color="green"
           position={[0, 90, -80]}
           args={[40, 2, 60]}
           rotation={[0, 0, 0]}
-          visible={wall.visible}
+          visible={isGameOn}
         />
+        <BoundingBox visible={boundary.visible} />
       </Physics>
       <ambientLight intensity={1} />
       <directionalLight />
     </>
+  );
+};
+
+const SpringSurface = ({ visible }: { visible: boolean }) => {
+  const sizes = [15, 0.1, 15];
+  const [ref] = useBox<THREE.Mesh>(() => ({
+    mass: 0,
+    position: [0, 10, 20], // Position of the surface
+    rotation: [-Math.PI / 8, 0, 0],
+    args: [25, 0.1, 15], // A very thin box to act like a plane (width, height, depth)
+  }));
+
+  return (
+    <Box ref={ref} name="spring" visible={visible}>
+      <boxGeometry args={[25, 0.1, 15]} />
+      <meshStandardMaterial color="green" />
+    </Box>
   );
 };
 
@@ -229,7 +228,7 @@ const PhyLevelBox = ({
         const topOfRectangle = rectanglePosition.y + 2 / 2;
 
         // If the box is above or just near the top of the rectangle, it's a top collision
-        if (true) {
+        if (e.contact.contactNormal[1] === -1) {
           console.log("Box hit the top of the rectangle!");
           const hitObject = e.contact.bi;
           const { name } = hitObject;
@@ -271,7 +270,7 @@ const PhyPlane = ({ color, ...props }: PhyPlaneProps) => {
 
   return (
     <Plane args={[1000, 1000]} ref={ref} receiveShadow>
-      <meshStandardMaterial color={color} />
+      <meshStandardMaterial color={color} side={THREE.DoubleSide} />
     </Plane>
   );
 };
@@ -279,9 +278,11 @@ const PhyPlane = ({ color, ...props }: PhyPlaneProps) => {
 const PhyWall = ({
   args = [1, 1, 1],
   position,
-  rotation = [0, 0, 0],
+  rotation,
   visible,
-}: Pick<BoxProps, "args" | "position" | "rotation"> & { visible: boolean }) => {
+}: Pick<BoxProps, "args" | "position" | "rotation"> & {
+  visible?: boolean;
+}) => {
   const [ref, api] = useBox(
     () => ({
       args: args,
@@ -366,6 +367,11 @@ const PhyBox = (props: PhyBoxProps) => {
     args: [size, size, size],
     allowSleep: true,
     angularDamping: 0.95,
+    onCollide: (e) => {
+      if (e.body.name === "spring") {
+        api.applyImpulse([0, 160, 0], [0, 0, 10]);
+      }
+    },
     ...props,
   }));
   const colorMap = props.imgUrl
@@ -438,6 +444,37 @@ const PhyBox = (props: PhyBoxProps) => {
     }
   }, [api, data, props.id]);
 
+  const maxAngularVelocity = 50;
+
+  useEffect(() => {
+    // Subscribe to angular velocity updates
+    const unsubscribe = api.angularVelocity.subscribe((angularVelocity) => {
+      const [x, y, z] = angularVelocity;
+
+      // Check if angular velocity exceeds the max limit
+      const clampedX = Math.min(
+        Math.max(x, -maxAngularVelocity),
+        maxAngularVelocity
+      );
+      const clampedY = Math.min(
+        Math.max(y, -maxAngularVelocity),
+        maxAngularVelocity
+      );
+      const clampedZ = Math.min(
+        Math.max(z, -maxAngularVelocity),
+        maxAngularVelocity
+      );
+
+      // If the angular velocity exceeds the limit, clamp it
+      if (x !== clampedX || y !== clampedY || z !== clampedZ) {
+        api.angularVelocity.set(clampedX, clampedY, clampedZ);
+      }
+    });
+
+    // Cleanup subscription when component unmounts
+    return () => unsubscribe();
+  }, [api]);
+
   return (
     <>
       <Box
@@ -474,6 +511,33 @@ const PhyBox = (props: PhyBoxProps) => {
         )}
       </Box>
     </>
+  );
+};
+
+const BoundingBox = ({ visible }: { visible: boolean }) => {
+  return (
+    <group name="boundaries" position={[0, 0, 40]} visible={visible}>
+      <PhyWall
+        position={[0, 60, -90]}
+        args={[0.2, 120, 90]}
+        rotation={[0, Math.PI / 2, 0]}
+      />
+      <PhyWall
+        position={[-45, 60, -45]}
+        args={[0.2, 120, 90]}
+        rotation={[0, 0, 0]}
+      />
+      <PhyWall
+        position={[0, 60, 60]}
+        args={[0.2, 120, 90]}
+        rotation={[0, Math.PI / 2, 0]}
+      />
+      <PhyWall
+        position={[45, 10, -45]}
+        args={[0.2, 190, 90]}
+        rotation={[0, 0, 0]}
+      />
+    </group>
   );
 };
 
@@ -527,36 +591,5 @@ const Lights = () => {
         position={[10, 10, 10]}
       />
     </>
-  );
-};
-
-const BoundingBox = () => {
-  return (
-    <group name="boundaries" position={[0, 0, 40]} visible={false}>
-      <PhyWall
-        position={[0, 10, -90]}
-        args={[0.2, 190, 90]}
-        rotation={[0, Math.PI / 2, 0]}
-        visible={true}
-      />
-      <PhyWall
-        position={[-45, 10, -45]}
-        args={[0.2, 190, 90]}
-        rotation={[0, 0, 0]}
-        visible={true}
-      />
-      <PhyWall
-        position={[0, 10, 30]}
-        args={[0.2, 190, 90]}
-        rotation={[0, Math.PI / 2, 0]}
-        visible={true}
-      />
-      <PhyWall
-        position={[45, 10, -45]}
-        args={[0.2, 190, 90]}
-        rotation={[0, 0, 0]}
-        visible={true}
-      />
-    </group>
   );
 };
