@@ -546,19 +546,24 @@ const PhyBox = (props: PhyBoxProps) => {
     if (jumpingPlayerId === props.id) {
       switch (direction) {
         case "left":
-          api.applyImpulse([0, 10, 30], [0, 0, 0]);
+          // api.applyImpulse([0, 10, 30], [0, 0, 0]);
+          api.applyImpulse([0, 10 / 1.2, 30 / 1.2], [0, 0, 0]);
           break;
         case "jump":
+          // api.applyImpulse([0, 40, 0], [0, 0, 0]);
           api.applyImpulse([0, 40, 0], [0, 0, 0]);
           break;
         case "right":
-          api.applyImpulse([0, 10, -30], [0, 0, 0]);
+          // api.applyImpulse([0, 10, -30], [0, 0, 0]);
+          api.applyImpulse([0, 0, -30 / 1.2], [0, 0, 0]);
           break;
         case "up":
-          api.applyImpulse([-30, 10, 0], [0, 0, 0]);
+          // api.applyImpulse([-30, 10, 0], [0, 0, 0]);
+          api.applyImpulse([-30 / 1.2, 0, 0], [0, 0, 0]);
           break;
         case "down":
-          api.applyImpulse([30, 10, 0], [0, 0, 0]);
+          // api.applyImpulse([30, 10, 0], [0, 0, 0]);
+          api.applyImpulse([30 / 1.2, 0, 0], [0, 0, 0]);
           break;
         default:
           break;
