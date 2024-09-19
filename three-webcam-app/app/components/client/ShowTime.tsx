@@ -196,7 +196,7 @@ const Scene = ({ players, isGameOn }: ShowTimeProps) => {
           visible={isGameOn}
           name="final"
         />
-        <BoundingBox visible={boundary.visible} />
+        <BoundingBox visible={boundary.visible} isActive={isGameOn} />
       </Physics>
       <ambientLight intensity={1} />
       <directionalLight />
@@ -342,8 +342,10 @@ const PhyWall = ({
   position,
   rotation,
   visible,
+  isActive,
 }: Pick<BoxProps, "args" | "position" | "rotation"> & {
   visible?: boolean;
+  isActive?: boolean;
 }) => {
   const [ref, api] = useBox(
     () => ({
@@ -356,7 +358,7 @@ const PhyWall = ({
   );
 
   useEffect(() => {
-    if (visible) {
+    if (isActive) {
       // Disable collision
       api.collisionFilterGroup.set(1);
       api.collisionFilterMask.set(1);
@@ -365,7 +367,7 @@ const PhyWall = ({
       api.collisionFilterGroup.set(0);
       api.collisionFilterMask.set(0);
     }
-  }, [api.collisionFilterGroup, api.collisionFilterMask, visible]);
+  }, [api.collisionFilterGroup, api.collisionFilterMask, isActive]);
 
   return (
     <Box
@@ -533,7 +535,7 @@ const PhyBox = (props: PhyBoxProps) => {
   //   if (stopPlayerId === props.id) {
   //     console.log("i shall stoppp ", props.id);
   //     // Reset both linear and angular velocity to zero
-  //     api.velocity.set(-10, 0, 0);
+  //     api.velocity.set(0, 0, 0);
   //     api.angularVelocity.set(0, 0, 0);
   //     api.applyForce([0, 0, 0], [0, 0, 0]);
   //   }
@@ -547,7 +549,7 @@ const PhyBox = (props: PhyBoxProps) => {
           api.applyImpulse([0, 10, 30], [0, 0, 0]);
           break;
         case "jump":
-          api.applyImpulse([0, 70, 0], [0, 0, 0]);
+          api.applyImpulse([0, 40, 0], [0, 0, 0]);
           break;
         case "right":
           api.applyImpulse([0, 10, -30], [0, 0, 0]);
@@ -579,34 +581,34 @@ const PhyBox = (props: PhyBoxProps) => {
 
   const maxAngularVelocity = 50;
 
-  useEffect(() => {
-    // Subscribe to angular velocity updates
-    const unsubscribe = api.angularVelocity.subscribe((angularVelocity) => {
-      const [x, y, z] = angularVelocity;
+  // useEffect(() => {
+  //   // Subscribe to angular velocity updates
+  //   const unsubscribe = api.angularVelocity.subscribe((angularVelocity) => {
+  //     const [x, y, z] = angularVelocity;
 
-      // Check if angular velocity exceeds the max limit
-      const clampedX = Math.min(
-        Math.max(x, -maxAngularVelocity),
-        maxAngularVelocity
-      );
-      const clampedY = Math.min(
-        Math.max(y, -maxAngularVelocity),
-        maxAngularVelocity
-      );
-      const clampedZ = Math.min(
-        Math.max(z, -maxAngularVelocity),
-        maxAngularVelocity
-      );
+  //     // Check if angular velocity exceeds the max limit
+  //     const clampedX = Math.min(
+  //       Math.max(x, -maxAngularVelocity),
+  //       maxAngularVelocity
+  //     );
+  //     const clampedY = Math.min(
+  //       Math.max(y, -maxAngularVelocity),
+  //       maxAngularVelocity
+  //     );
+  //     const clampedZ = Math.min(
+  //       Math.max(z, -maxAngularVelocity),
+  //       maxAngularVelocity
+  //     );
 
-      // If the angular velocity exceeds the limit, clamp it
-      if (x !== clampedX || y !== clampedY || z !== clampedZ) {
-        api.angularVelocity.set(clampedX, clampedY, clampedZ);
-      }
-    });
+  //     // If the angular velocity exceeds the limit, clamp it
+  //     if (x !== clampedX || y !== clampedY || z !== clampedZ) {
+  //       api.angularVelocity.set(clampedX, clampedY, clampedZ);
+  //     }
+  //   });
 
-    // Cleanup subscription when component unmounts
-    return () => unsubscribe();
-  }, [api]);
+  //   // Cleanup subscription when component unmounts
+  //   return () => unsubscribe();
+  // }, [api]);
 
   return (
     <>
@@ -647,32 +649,49 @@ const PhyBox = (props: PhyBoxProps) => {
   );
 };
 
-const BoundingBox = ({ visible }: { visible: boolean }) => {
+const BoundingBox = ({
+  visible,
+  isActive,
+}: {
+  visible: boolean;
+  isActive: boolean;
+}) => {
   return (
     <group name="boundaries" position={[0, 0, 40]} visible={visible}>
       <PhyWall
         position={[0, 60, -90]}
-        args={[0.2, 120, 90]}
+        args={[0.2, 190, 90]}
         rotation={[0, Math.PI / 2, 0]}
         visible={visible}
+        isActive={isActive}
       />
       <PhyWall
         position={[-35, 60, -45]}
-        args={[0.2, 120, 90]}
-        rotation={[0, 0, 0]}
-        visible={visible}
-      />
-      <PhyWall
-        position={[0, 60, 60]}
-        args={[0.2, 120, 90]}
-        rotation={[0, Math.PI / 2, 0]}
-        visible={visible}
-      />
-      <PhyWall
-        position={[35, 10, -45]}
         args={[0.2, 190, 90]}
         rotation={[0, 0, 0]}
         visible={visible}
+        isActive={isActive}
+      />
+      <PhyWall
+        position={[0, 60, 60]}
+        args={[0.2, 190, 90]}
+        rotation={[0, Math.PI / 2, 0]}
+        visible={visible}
+        isActive={isActive}
+      />
+      <PhyWall
+        position={[35, 60, -45]}
+        args={[0.2, 190, 90]}
+        rotation={[0, 0, 0]}
+        visible={visible}
+        isActive={isActive}
+      />
+      <PhyWall
+        position={[5, 150, -35]}
+        args={[0.2, 190, 90]}
+        rotation={[0, Math.PI / 2, Math.PI / 2]}
+        visible={visible}
+        isActive={isActive}
       />
     </group>
   );

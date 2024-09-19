@@ -73,23 +73,23 @@ export default function AppWrapper() {
   const { publish } = useChannel(CHANNEL_NAME);
   const handleJumpPlayer = (direction: JumpDirection) => {
     console.log("handle jump player is called");
-    if (isCooldown || (direction === "jump" && jumpCount >= maxJumps)) {
-      console.log("sorry bro cooldown a bit");
-      setIsCooldown(true);
-      return;
-    }
+    // if (isCooldown || (direction === "jump" && jumpCount >= maxJumps)) {
+    //   console.log("sorry bro cooldown a bit");
+    //   setIsCooldown(true);
+    //   return;
+    // }
 
-    // Increment jump count
-    direction === "jump" && setJumpCount(jumpCount + 1);
+    // // Increment jump count
+    // direction === "jump" && setJumpCount(jumpCount + 1);
 
-    // If maximum jump count is reached, trigger cooldown
-    if (jumpCount + 1 >= maxJumps && direction === "jump") {
-      setIsCooldown(true);
-      setTimeout(() => {
-        setJumpCount(0); // Reset jump count after cooldown
-        setIsCooldown(false);
-      }, cooldownTime);
-    }
+    // // If maximum jump count is reached, trigger cooldown
+    // if (jumpCount + 1 >= maxJumps && direction === "jump") {
+    //   setIsCooldown(true);
+    //   setTimeout(() => {
+    //     setJumpCount(0); // Reset jump count after cooldown
+    //     setIsCooldown(false);
+    //   }, cooldownTime);
+    // }
     publish("jump", { playerId: userId, direction });
   };
 
@@ -312,6 +312,10 @@ const PlayerButton = ({
   const intervalIdRef = useRef<any>(null);
   // Start the repeated action when the button is pressed
   const handleMouseDown = () => {
+    if (direction === "jump") {
+      onJumpPlayer(direction);
+      return;
+    }
     if (!intervalIdRef.current) {
       intervalIdRef.current = setInterval(() => onJumpPlayer(direction), 100); // Adjust interval time as needed
     }
@@ -336,10 +340,10 @@ const PlayerButton = ({
       {/* <div className="text-sm">jump left</div> */}
       <Button
         variant={"blue"}
-        onClick={() => onJumpPlayer(direction)}
-        // onMouseDown={handleMouseDown}
-        // onMouseUp={handleMouseUp}
-        // onMouseLeave={handleMouseLeave}
+        // onClick={() => onJumpPlayer(direction)}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
         className="shadow-lg text-lg w-fit h-fit rounded-full"
         disabled={isCooldown}
       >
