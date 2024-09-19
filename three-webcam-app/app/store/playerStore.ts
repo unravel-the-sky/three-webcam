@@ -2,8 +2,10 @@ import { create } from "zustand";
 import { JumpDirection } from "../components/client/AppWrapper";
 
 export type PlayerListType = {
-    jumpingPlayerId: string;
-    direction: JumpDirection
+    jumpingPlayerId?: string;
+    stopPlayerId?: string;
+    direction?: JumpDirection,
+    isGameOn?: boolean;
 }
 
 export type PlayerStore = {
@@ -14,7 +16,9 @@ export type PlayerStore = {
 const usePlayerStore = create<PlayerStore>((set, get) => ({
     data: {
         jumpingPlayerId: '',
-        direction: 'left'
+        stopPlayerId: '',
+        direction: 'left',
+        isGameOn: false
     },
     setData: (payload: PlayerListType) => set(
         (state) => (

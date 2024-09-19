@@ -7,10 +7,10 @@ import {
 } from "@/app/serverActions/player";
 import { CHANNEL_NAME } from "@/app/utils";
 import { Button } from "@/components/ui/button";
-import { Player } from "@prisma/client";
+import { Jump, Player } from "@prisma/client";
 import { useChannel } from "ably/react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ShowTime from "./ShowTime";
 import { JumpDirection } from "./AppWrapper";
 import usePlayerStore from "@/app/store/playerStore";
@@ -70,11 +70,19 @@ export default function PlayerList() {
 
   const { setData } = usePlayerStore();
 
-  const { channel } = useChannel(CHANNEL_NAME, "jump", (message) => {
+  useChannel(CHANNEL_NAME, "jump", (message) => {
     const { data: jumpData } = message;
     const { playerId } = jumpData;
     const direction = jumpData.direction as JumpDirection;
-    setData({ jumpingPlayerId: playerId, direction });
+    setData({ jumpingPlayerId: playerId, direction, stopPlayerId: "" });
+  });
+
+  useChannel(CHANNEL_NAME, "stop", (message) => {
+    const { data: stopData } = message;
+    const { playerId } = stopData;
+    const direction = stopData.direction as JumpDirection;
+    // console.log("i got stop player! ", playerId);
+    setData({ stopPlayerId: playerId, direction });
   });
 
   const togglePolling = () => {
@@ -98,6 +106,19 @@ export default function PlayerList() {
   const toggleStartGame = () => {
     setStartGame(!startGame);
   };
+
+  // const [isDisabled, setIsDisabled] = useState(false);
+
+  const { publish } = useChannel(CHANNEL_NAME);
+
+  const isDisabled = useMemo(() => {
+    if (showTime === true && startGame === false) return true;
+    return false;
+  }, [showTime, startGame]);
+
+  useEffect(() => {
+    publish("isGameOn", { val: isDisabled });
+  }, [isDisabled, publish]);
 
   return (
     <>
@@ -187,22 +208,33 @@ export default function PlayerList() {
 
 const PlayerPicture = ({ player }: { player: Player }) => {
   const { data } = usePlayerStore();
-  const [jump, setJump] = useState(false);
+  const [jump, setJump] = useState<JumpDirection>();
 
   useEffect(() => {
     if (data.jumpingPlayerId === player.id) {
-      setJump(true);
+      const { direction } = data;
+      setJump(direction);
       setTimeout(() => {
-        setJump(false);
+        setJump(undefined);
       }, 200);
     }
-  }, [data]);
+  }, [data, player.id]);
 
   return (
     <div
       key={player.id}
       className={`flex flex-col p-2 outline-dashed hover:bg-gray-200 hover:-translate-y-2 hover:shadow-lg transition-all ${
-        jump && "-translate-y-2"
+        jump === "left"
+          ? "-translate-x-2"
+          : jump === "right"
+          ? "translate-x-2"
+          : jump === "up"
+          ? "-translate-y-2"
+          : jump === "down"
+          ? "translate-y-2"
+          : jump === "jump"
+          ? "scale-110"
+          : null
       }`}
     >
       <p className="text-sm">username: {player.username}</p>

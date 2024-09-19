@@ -216,12 +216,24 @@ const SpringSurface = ({
   color: string;
   name: string;
 }) => {
-  const [ref] = useBox<THREE.Mesh>(() => ({
+  const [ref, api] = useBox<THREE.Mesh>(() => ({
     mass: 0,
     position: position, // Position of the surface
     rotation,
     args: args, // A very thin box to act like a plane (width, height, depth)
   }));
+
+  useEffect(() => {
+    if (visible) {
+      // Disable collision
+      api.collisionFilterGroup.set(1);
+      api.collisionFilterMask.set(1);
+    } else {
+      // Enable collision (reset to default group and mask)
+      api.collisionFilterGroup.set(0);
+      api.collisionFilterMask.set(0);
+    }
+  }, [api.collisionFilterGroup, api.collisionFilterMask, visible]);
 
   return (
     <Box ref={ref} name={name} visible={visible}>
@@ -280,6 +292,18 @@ const PhyLevelBox = ({
     useRef<THREE.Mesh>(null)
   );
 
+  useEffect(() => {
+    if (visible) {
+      // Disable collision
+      api.collisionFilterGroup.set(1);
+      api.collisionFilterMask.set(1);
+    } else {
+      // Enable collision (reset to default group and mask)
+      api.collisionFilterGroup.set(0);
+      api.collisionFilterMask.set(0);
+    }
+  }, [api.collisionFilterGroup, api.collisionFilterMask, visible]);
+
   return (
     <Box
       args={args}
@@ -330,6 +354,18 @@ const PhyWall = ({
     }),
     useRef<THREE.Mesh>(null)
   );
+
+  useEffect(() => {
+    if (visible) {
+      // Disable collision
+      api.collisionFilterGroup.set(1);
+      api.collisionFilterMask.set(1);
+    } else {
+      // Enable collision (reset to default group and mask)
+      api.collisionFilterGroup.set(0);
+      api.collisionFilterMask.set(0);
+    }
+  }, [api.collisionFilterGroup, api.collisionFilterMask, visible]);
 
   return (
     <Box
@@ -463,35 +499,87 @@ const PhyBox = (props: PhyBoxProps) => {
   //   }
   // });
 
+  const maxSpeed = 3; // Adjust this value as needed
+
   const { data } = usePlayerStore();
+  // useEffect(() => {
+  //   const { jumpingPlayerId, direction, stopPlayerId } = data;
+  //   if (jumpingPlayerId === props.id) {
+  //     console.log("immea moveee: ", direction);
+  //     api.velocity.subscribe(([vx, vy, vz]) => {
+  //       let newVelocity = [vx, vy, vz];
+
+  //       switch (direction) {
+  //         case "left":
+  //           newVelocity = [0, vy, Math.min(maxSpeed, vz + 1)]; // Add velocity to move left, cap speed
+  //           break;
+  //         case "jump":
+  //           newVelocity = [vx, Math.min(maxSpeed, vy + 1), vz]; // Add vertical velocity, cap jump speed
+  //           break;
+  //         case "right":
+  //           newVelocity = [0, vy, Math.max(-maxSpeed, vz - 1)]; // Add velocity to move right, cap speed
+  //           break;
+  //         case "up":
+  //           newVelocity = [Math.max(-maxSpeed, vx - 1), vy, vz]; // Add velocity to move forward, cap speed
+  //           break;
+  //         case "down":
+  //           newVelocity = [Math.min(maxSpeed, vx + 1), vy, vz]; // Add velocity to move backward, cap speed
+  //           break;
+  //         default:
+  //           break;
+  //       }
+
+  //       // Set the new capped velocity
+  //       api.velocity.set(newVelocity[0], newVelocity[1], newVelocity[2]);
+  //     });
+  //   }
+
+  //   if (stopPlayerId === props.id) {
+  //     console.log("i shall stoppp ", props.id);
+  //     // Reset both linear and angular velocity to zero
+  //     api.velocity.set(-10, 0, 0);
+  //     api.angularVelocity.set(0, 0, 0);
+  //     api.applyForce([0, 0, 0], [0, 0, 0]);
+  //   }
+  // }, [api, data, props.id]);
+
   useEffect(() => {
     const { jumpingPlayerId, direction } = data;
     if (jumpingPlayerId === props.id) {
       switch (direction) {
         case "left":
           api.applyImpulse([0, 10, 30], [0, 0, 0]);
-          // api.angularVelocity.set(0, 0, 0);
           break;
         case "jump":
           api.applyImpulse([0, 70, 0], [0, 0, 0]);
           break;
         case "right":
           api.applyImpulse([0, 10, -30], [0, 0, 0]);
-          // api.angularVelocity.set(0, 0, 0);
           break;
         case "up":
           api.applyImpulse([-30, 10, 0], [0, 0, 0]);
-          // api.angularVelocity.set(0, 0, 0);
           break;
         case "down":
           api.applyImpulse([30, 10, 0], [0, 0, 0]);
-          // api.angularVelocity.set(0, 0, 0);
           break;
         default:
           break;
       }
     }
   }, [api, data, props.id]);
+
+  const targetRotation = new THREE.Euler(0, 0, 0);
+
+  useChannel(CHANNEL_NAME, "respawn", (message) => {
+    const { data: respawn } = message;
+    const { playerId } = respawn;
+    if (playerId === props.id) {
+      console.log("respawn meee");
+      ref.current?.lookAt(0, 30, 0);
+      api.rotation.set(targetRotation.x, targetRotation.y, targetRotation.z);
+      api.position.set(0, 20 + Math.random() * 5, 0);
+    }
+  });
 
   const maxAngularVelocity = 50;
 
@@ -570,21 +658,25 @@ const BoundingBox = ({ visible }: { visible: boolean }) => {
         position={[0, 60, -90]}
         args={[0.2, 120, 90]}
         rotation={[0, Math.PI / 2, 0]}
+        visible={visible}
       />
       <PhyWall
-        position={[-45, 60, -45]}
+        position={[-35, 60, -45]}
         args={[0.2, 120, 90]}
         rotation={[0, 0, 0]}
+        visible={visible}
       />
       <PhyWall
         position={[0, 60, 60]}
         args={[0.2, 120, 90]}
         rotation={[0, Math.PI / 2, 0]}
+        visible={visible}
       />
       <PhyWall
-        position={[45, 10, -45]}
+        position={[35, 10, -45]}
         args={[0.2, 190, 90]}
         rotation={[0, 0, 0]}
+        visible={visible}
       />
     </group>
   );
@@ -629,7 +721,7 @@ const Lights = () => {
         intensity={2 * Math.PI}
         angle={0.3}
         decay={0}
-        color={new THREE.Color("whit")}
+        color={new THREE.Color("white")}
         penumbra={1}
       />
       <spotLight
