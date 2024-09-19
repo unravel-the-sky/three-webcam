@@ -73,23 +73,7 @@ export default function AppWrapper() {
   const { publish } = useChannel(CHANNEL_NAME);
   const handleJumpPlayer = (direction: JumpDirection) => {
     console.log("handle jump player is called");
-    // if (isCooldown || (direction === "jump" && jumpCount >= maxJumps)) {
-    //   console.log("sorry bro cooldown a bit");
-    //   setIsCooldown(true);
-    //   return;
-    // }
 
-    // // Increment jump count
-    // direction === "jump" && setJumpCount(jumpCount + 1);
-
-    // // If maximum jump count is reached, trigger cooldown
-    // if (jumpCount + 1 >= maxJumps && direction === "jump") {
-    //   setIsCooldown(true);
-    //   setTimeout(() => {
-    //     setJumpCount(0); // Reset jump count after cooldown
-    //     setIsCooldown(false);
-    //   }, cooldownTime);
-    // }
     publish("jump", { playerId: userId, direction });
   };
 
@@ -245,9 +229,8 @@ export default function AppWrapper() {
           </div>
           <div className="flex flex-col gap-16 mt-12">
             <Button
-              variant={"default"}
               onClick={handleRespawn}
-              className=" px-4 py-4 shadow-lg text-lg"
+              className="px-4 py-4 shadow-lg text-lg select-none"
               disabled={isCooldown}
             >
               respawn!
@@ -257,7 +240,7 @@ export default function AppWrapper() {
               <AlertDialogTrigger asChild>
                 <Button
                   variant={"destructive"}
-                  className=" px-4 py-4 shadow-lg text-lg"
+                  className="px-4 py-4 shadow-lg text-lg"
                 >
                   delete player!
                 </Button>

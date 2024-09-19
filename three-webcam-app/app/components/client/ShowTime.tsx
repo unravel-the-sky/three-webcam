@@ -9,14 +9,16 @@ import {
   Triplet,
   useBox,
   usePlane,
+  useSphere,
 } from "@react-three/cannon";
-import { Box, OrbitControls, Plane, Text } from "@react-three/drei";
+import { Box, OrbitControls, Plane, Sphere, Text } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useChannel } from "ably/react";
 import { useControls } from "leva";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
+import BoundingBox from "./BoundingBox";
 
 interface ShowTimeProps {
   players: Player[];
@@ -64,61 +66,9 @@ export default function ShowTime({ players, isGameOn }: ShowTimeProps) {
 }
 
 const Scene = ({ players, isGameOn }: ShowTimeProps) => {
-  const boxes = useMemo(() => {
-    const gap = 3;
-    const size = 4;
-    const dimension = 4;
-    const positions = [];
-    for (let x = 0; x < dimension; x++) {
-      for (let y = 0; y < dimension; y++) {
-        for (let z = 0; z < dimension; z++) {
-          positions.push([x * gap, y * gap, z * gap]);
-        }
-      }
-    }
-    return positions;
-  }, []);
-
-  const wall = useControls("the Wall", {
-    visible: false,
+  const boundingBox = useControls("Show bounding box", {
+    show: false,
   });
-  const boundary = useControls("Boundary box", {
-    visible: false,
-  });
-
-  // const { camera } = useThree(); // Access the camera from the scene
-  // const cameraRef = useRef(camera); // Store the reference to the camera
-  // const direction = new THREE.Vector3();
-  // console.log("im rerendered");
-  // camera.getWorldDirection(direction);
-  // console.log(
-  //   "camera: ",
-  //   camera.position,
-  //   " looking at: ",
-  //   direction,
-  //   " rotation: ",
-  //   camera.rotation
-  // );
-  // const gameCameraPos = { x: 154, y: 104, z: -21 };
-  // const gameCameraRot = { x: -1.41, y: 1.42, z: 1.41 };
-
-  // useEffect(() => {
-  //   if (isGameOn && cameraRef.current) {
-  //     // cameraRef.current.position.lerp(gameCameraPos, 0.1);
-  //     cameraRef.current.position.set(
-  //       gameCameraPos.x,
-  //       gameCameraPos.y,
-  //       gameCameraPos.z
-  //     );
-  //     cameraRef.current.lookAt(-0.64, -0.39, 0.65);
-  //     cameraRef.current.rotation.set(
-  //       gameCameraRot.x,
-  //       gameCameraRot.y,
-  //       gameCameraRot.z
-  //     );
-  //   }
-  // }, [isGameOn]);
-
   return (
     <>
       <Physics broadphase="SAP" gravity={[0, -50, 0]} allowSleep>
@@ -136,7 +86,6 @@ const Scene = ({ players, isGameOn }: ShowTimeProps) => {
             key={id}
             username={username}
             mass={5}
-            // position={boxes[index]}
             position={[
               (Math.random() - 0.5) * 4,
               10 + (players.length - index) * 4,
@@ -167,13 +116,6 @@ const Scene = ({ players, isGameOn }: ShowTimeProps) => {
           position={[0, 60, 30]}
           rotation={[-Math.PI / 8, 0, 0]}
         />
-        {/* <PhyLevelBox
-          color="red"
-          position={[0, 35, -5]}
-          args={[20, 1, 10]}
-          rotation={[0, 0, 0]}
-          visible={isGameOn}
-        /> */}
         <PhyLevelBox
           color="red"
           position={[0, 40, 20]}
@@ -196,7 +138,7 @@ const Scene = ({ players, isGameOn }: ShowTimeProps) => {
           visible={isGameOn}
           name="final"
         />
-        <BoundingBox visible={boundary.visible} isActive={isGameOn} />
+        <BoundingBox visible={boundingBox.show} isActive={isGameOn} />
       </Physics>
       <ambientLight intensity={1} />
       <directionalLight />
@@ -337,96 +279,6 @@ const PhyPlane = ({ color, ...props }: PhyPlaneProps) => {
   );
 };
 
-const PhyWall = ({
-  args = [1, 1, 1],
-  position,
-  rotation,
-  visible,
-  isActive,
-}: Pick<BoxProps, "args" | "position" | "rotation"> & {
-  visible?: boolean;
-  isActive?: boolean;
-}) => {
-  const [ref, api] = useBox(
-    () => ({
-      args: args,
-      mass: 0,
-      position,
-      rotation,
-    }),
-    useRef<THREE.Mesh>(null)
-  );
-
-  useEffect(() => {
-    if (isActive) {
-      // Disable collision
-      api.collisionFilterGroup.set(1);
-      api.collisionFilterMask.set(1);
-    } else {
-      // Enable collision (reset to default group and mask)
-      api.collisionFilterGroup.set(0);
-      api.collisionFilterMask.set(0);
-    }
-  }, [api.collisionFilterGroup, api.collisionFilterMask, isActive]);
-
-  return (
-    <Box
-      args={args}
-      ref={ref}
-      position={position}
-      rotation={rotation}
-      receiveShadow
-      castShadow
-      visible={visible}
-    >
-      <meshNormalMaterial />
-    </Box>
-  );
-};
-
-const PhyWallFloor = ({
-  args = [1, 1, 1],
-  position,
-  rotation = [0, 0, 0],
-  visible,
-}: Pick<BoxProps, "args" | "position" | "rotation"> & { visible: boolean }) => {
-  const { publish } = useChannel(CHANNEL_NAME);
-  const [announced, setAnnounced] = useState(false);
-
-  const [ref, api] = useBox(
-    () => ({
-      args: args,
-      mass: 0,
-      position,
-      rotation,
-      onCollide: (e) => {
-        const hitObject = e.contact.bi;
-        const { name } = hitObject;
-        console.log(`${name} won!`);
-        if (!announced) {
-          publish("winner", { playerId: name });
-          // setAnnounced(true);
-        }
-      },
-    }),
-    useRef<THREE.Mesh>(null)
-  );
-
-  return (
-    <Box
-      args={args}
-      ref={ref}
-      position={position}
-      rotation={rotation}
-      receiveShadow
-      castShadow
-      visible={visible}
-    >
-      <meshNormalMaterial />
-    </Box>
-  );
-};
-
 // PhyBox component
 interface PhyBoxProps {
   imgUrl: string;
@@ -439,8 +291,9 @@ interface PhyBoxProps {
 
 const PhyBox = (props: PhyBoxProps) => {
   const size = 2;
-  const [ref, api] = useBox<THREE.Mesh>(() => ({
-    args: [size, size, size],
+  const [ref, api] = useSphere<THREE.Mesh>(() => ({
+    // args: [size, size, size],
+    args: [size],
     allowSleep: true,
     angularDamping: 0.95,
     onCollide: (e) => {
@@ -466,104 +319,26 @@ const PhyBox = (props: PhyBoxProps) => {
     val: false,
   });
 
-  // const [reset, setReset] = useState(false);
-  // const targetRotation = new THREE.Euler(0, 0, 0);
-  // const lerpFactor = 0.95;
-
-  // useFrame((state) => {
-  //   // ref.current?.lookAt(0, 20, 0);
-  //   if (reset && ref.current) {
-  //     const currentRotation = ref.current.rotation;
-  //     currentRotation.x = THREE.MathUtils.lerp(
-  //       currentRotation.x,
-  //       targetRotation.x,
-  //       lerpFactor
-  //     );
-  //     currentRotation.y = THREE.MathUtils.lerp(
-  //       currentRotation.y,
-  //       targetRotation.y,
-  //       lerpFactor
-  //     );
-  //     currentRotation.z = THREE.MathUtils.lerp(
-  //       currentRotation.z,
-  //       targetRotation.z,
-  //       lerpFactor
-  //     );
-
-  //     api.rotation.set(currentRotation.x, currentRotation.y, currentRotation.z);
-
-  //     api.velocity.set(0, 0, 0);
-  //     api.angularVelocity.set(0, 0, 0);
-  //   }
-  // });
-
-  const maxSpeed = 3; // Adjust this value as needed
-
   const { data } = usePlayerStore();
-  // useEffect(() => {
-  //   const { jumpingPlayerId, direction, stopPlayerId } = data;
-  //   if (jumpingPlayerId === props.id) {
-  //     console.log("immea moveee: ", direction);
-  //     api.velocity.subscribe(([vx, vy, vz]) => {
-  //       let newVelocity = [vx, vy, vz];
-
-  //       switch (direction) {
-  //         case "left":
-  //           newVelocity = [0, vy, Math.min(maxSpeed, vz + 1)]; // Add velocity to move left, cap speed
-  //           break;
-  //         case "jump":
-  //           newVelocity = [vx, Math.min(maxSpeed, vy + 1), vz]; // Add vertical velocity, cap jump speed
-  //           break;
-  //         case "right":
-  //           newVelocity = [0, vy, Math.max(-maxSpeed, vz - 1)]; // Add velocity to move right, cap speed
-  //           break;
-  //         case "up":
-  //           newVelocity = [Math.max(-maxSpeed, vx - 1), vy, vz]; // Add velocity to move forward, cap speed
-  //           break;
-  //         case "down":
-  //           newVelocity = [Math.min(maxSpeed, vx + 1), vy, vz]; // Add velocity to move backward, cap speed
-  //           break;
-  //         default:
-  //           break;
-  //       }
-
-  //       // Set the new capped velocity
-  //       api.velocity.set(newVelocity[0], newVelocity[1], newVelocity[2]);
-  //     });
-  //   }
-
-  //   if (stopPlayerId === props.id) {
-  //     console.log("i shall stoppp ", props.id);
-  //     // Reset both linear and angular velocity to zero
-  //     api.velocity.set(0, 0, 0);
-  //     api.angularVelocity.set(0, 0, 0);
-  //     api.applyForce([0, 0, 0], [0, 0, 0]);
-  //   }
-  // }, [api, data, props.id]);
 
   useEffect(() => {
     const { jumpingPlayerId, direction } = data;
     if (jumpingPlayerId === props.id) {
       switch (direction) {
         case "left":
-          // api.applyImpulse([0, 10, 30], [0, 0, 0]);
-          api.applyImpulse([0, 10 / 1.2, 30 / 1.2], [0, 0, 0]);
+          api.applyImpulse([0, 0, 30 / 1], [0, 0, 0]);
           break;
         case "jump":
-          // api.applyImpulse([0, 40, 0], [0, 0, 0]);
           api.applyImpulse([0, 40, 0], [0, 0, 0]);
           break;
         case "right":
-          // api.applyImpulse([0, 10, -30], [0, 0, 0]);
-          api.applyImpulse([0, 0, -30 / 1.2], [0, 0, 0]);
+          api.applyImpulse([0, 0, -30 / 1], [0, 0, 0]);
           break;
         case "up":
-          // api.applyImpulse([-30, 10, 0], [0, 0, 0]);
-          api.applyImpulse([-30 / 1.2, 0, 0], [0, 0, 0]);
+          api.applyImpulse([-30 / 1, 0, 0], [0, 0, 0]);
           break;
         case "down":
-          // api.applyImpulse([30, 10, 0], [0, 0, 0]);
-          api.applyImpulse([30 / 1.2, 0, 0], [0, 0, 0]);
+          api.applyImpulse([30 / 1, 0, 0], [0, 0, 0]);
           break;
         default:
           break;
@@ -586,39 +361,11 @@ const PhyBox = (props: PhyBoxProps) => {
 
   const maxAngularVelocity = 50;
 
-  // useEffect(() => {
-  //   // Subscribe to angular velocity updates
-  //   const unsubscribe = api.angularVelocity.subscribe((angularVelocity) => {
-  //     const [x, y, z] = angularVelocity;
-
-  //     // Check if angular velocity exceeds the max limit
-  //     const clampedX = Math.min(
-  //       Math.max(x, -maxAngularVelocity),
-  //       maxAngularVelocity
-  //     );
-  //     const clampedY = Math.min(
-  //       Math.max(y, -maxAngularVelocity),
-  //       maxAngularVelocity
-  //     );
-  //     const clampedZ = Math.min(
-  //       Math.max(z, -maxAngularVelocity),
-  //       maxAngularVelocity
-  //     );
-
-  //     // If the angular velocity exceeds the limit, clamp it
-  //     if (x !== clampedX || y !== clampedY || z !== clampedZ) {
-  //       api.angularVelocity.set(clampedX, clampedY, clampedZ);
-  //     }
-  //   });
-
-  //   // Cleanup subscription when component unmounts
-  //   return () => unsubscribe();
-  // }, [api]);
-
   return (
     <>
-      <Box
-        args={[size, size, size]}
+      <Sphere
+        // args={[size, size, size]}
+        args={[size]}
         ref={ref}
         name={props.id}
         userData={{ color: props.color }}
@@ -649,56 +396,8 @@ const PhyBox = (props: PhyBoxProps) => {
             metalness={0.1}
           />
         )}
-      </Box>
+      </Sphere>
     </>
-  );
-};
-
-const BoundingBox = ({
-  visible,
-  isActive,
-}: {
-  visible: boolean;
-  isActive: boolean;
-}) => {
-  return (
-    <group name="boundaries" position={[0, 0, 40]} visible={visible}>
-      <PhyWall
-        position={[0, 60, -90]}
-        args={[0.2, 190, 90]}
-        rotation={[0, Math.PI / 2, 0]}
-        visible={visible}
-        isActive={isActive}
-      />
-      <PhyWall
-        position={[-35, 60, -45]}
-        args={[0.2, 190, 90]}
-        rotation={[0, 0, 0]}
-        visible={visible}
-        isActive={isActive}
-      />
-      <PhyWall
-        position={[0, 60, 60]}
-        args={[0.2, 190, 90]}
-        rotation={[0, Math.PI / 2, 0]}
-        visible={visible}
-        isActive={isActive}
-      />
-      <PhyWall
-        position={[35, 60, -45]}
-        args={[0.2, 190, 90]}
-        rotation={[0, 0, 0]}
-        visible={visible}
-        isActive={isActive}
-      />
-      <PhyWall
-        position={[5, 150, -35]}
-        args={[0.2, 190, 90]}
-        rotation={[0, Math.PI / 2, Math.PI / 2]}
-        visible={visible}
-        isActive={isActive}
-      />
-    </group>
   );
 };
 
