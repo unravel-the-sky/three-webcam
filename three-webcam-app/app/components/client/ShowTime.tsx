@@ -2,7 +2,6 @@
 
 import usePlayerStore from "@/app/store/playerStore";
 import { CHANNEL_NAME } from "@/app/utils";
-import { Button } from "@/components/ui/button";
 import { Player } from "@prisma/client";
 import {
   BoxProps,
@@ -12,7 +11,7 @@ import {
   usePlane,
 } from "@react-three/cannon";
 import { Box, OrbitControls, Plane, Text } from "@react-three/drei";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas } from "@react-three/fiber";
 import { useChannel } from "ably/react";
 import { useControls } from "leva";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -543,7 +542,7 @@ const BoundingBox = ({ visible }: { visible: boolean }) => {
 
 const Lights = () => {
   const directionalCtl = useControls("Directional Light", {
-    visible: true,
+    visible: false,
     position: {
       x: 9.3,
       y: 7.0,
@@ -580,6 +579,7 @@ const Lights = () => {
         intensity={2 * Math.PI}
         angle={0.3}
         decay={0}
+        color={new THREE.Color("whit")}
         penumbra={1}
       />
       <spotLight

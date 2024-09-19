@@ -17,6 +17,17 @@ import {
 import { useEffect, useState, useTransition } from "react";
 import SplashScreen from "./SplashScreen";
 import TakePhoto from "./TakePhoto";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const dataURIToBlob = (dataURI: string) => {
   const splitDataURI = dataURI.split(",");
@@ -185,13 +196,33 @@ export default function AppWrapper() {
               />
             </div>
           </div>
-          <Button
-            variant={"destructive"}
-            onClick={handleReset}
-            className="mt-12 px-4 py-4 shadow-lg text-lg"
-          >
-            Reset
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant={"destructive"}
+                className="mt-12 px-4 py-4 shadow-lg text-lg"
+              >
+                reset
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>omg fr?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  this will delete your user
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>nah</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-[#1b3b64]"
+                  onClick={handleReset}
+                >
+                  yez
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       ) : (
         <div className="bg-white p-8 rounded-lg shadow-lg w-full">

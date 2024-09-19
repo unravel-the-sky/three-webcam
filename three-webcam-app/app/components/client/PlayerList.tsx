@@ -14,6 +14,18 @@ import { useEffect, useState } from "react";
 import ShowTime from "./ShowTime";
 import { JumpDirection } from "./AppWrapper";
 import usePlayerStore from "@/app/store/playerStore";
+import ShowTimeNew from "./ShowTimeNew";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function PlayerList() {
   const [isPolling, setIsPolling] = useState(false);
@@ -73,9 +85,14 @@ export default function PlayerList() {
     setShowTime(!showTime);
   };
 
-  const handleDeleteAll = () => {
+  const handleDeleteAll = async () => {
     // todo
-    deleteAllPlayers();
+    await deleteAllPlayers();
+    getAllPlayers().then((res) => {
+      if (res) {
+        setPlayers(res);
+      }
+    });
   };
 
   const toggleStartGame = () => {
@@ -87,6 +104,7 @@ export default function PlayerList() {
       {showTime && (
         <div className="fixed w-full left-0 top-0 h-full bg-gray-600 p-4 z-10">
           <ShowTime players={players} isGameOn={startGame} />
+          {/* <ShowTimeNew players={players} isGameOn={startGame} /> */}
         </div>
       )}
 
@@ -134,13 +152,30 @@ export default function PlayerList() {
                 <Button onClick={handleShowTime} className="w-fit">
                   show time!
                 </Button>
-                <Button
-                  onClick={handleDeleteAll}
-                  variant={"destructive"}
-                  className="w-fit"
-                >
-                  delete all
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant={"destructive"} className="w-fit">
+                      delete all
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>omg fr?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        this will wipe out all the users from db!
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>nah</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-[#1b3b64]"
+                        onClick={handleDeleteAll}
+                      >
+                        yez
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
           </div>

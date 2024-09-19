@@ -9,7 +9,7 @@ import Webcam from "./Webcam";
 import useUserStore from "@/app/store/userStore";
 import colors from "nice-color-palettes";
 
-const niceColors = [...colors[3], ...colors[4], ...colors[26]];
+const niceColors = [...colors[3], ...colors[2], ...colors[6]];
 // [
 //   "#99b898",
 //   "#fecea8",
