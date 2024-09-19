@@ -46,6 +46,7 @@ export default function SplashScreen({ onNext }: { onNext: () => void }) {
         <Input
           id="username"
           value={username}
+          className="text-base"
           onChange={(e) => setUsername(e.target.value)}
           placeholder="Enter your username"
           required

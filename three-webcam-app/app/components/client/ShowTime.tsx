@@ -452,10 +452,6 @@ const PhyBox = (props: PhyBoxProps) => {
         api.angularVelocity.set(0, 0, 0);
         api.applyImpulse([0, 310, 0], [0, 0, 1]);
       }
-      if (e.body.name === "level") {
-        api.velocity.set(0, 0, 0);
-        api.angularVelocity.set(0, 0, 0);
-      }
     },
     ...props,
   }));
