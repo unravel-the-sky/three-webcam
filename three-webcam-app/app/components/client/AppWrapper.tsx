@@ -28,6 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import ConfettiExplosion from "react-confetti-explosion";
 
 const dataURIToBlob = (dataURI: string) => {
   const splitDataURI = dataURI.split(",");
@@ -43,7 +44,7 @@ const dataURIToBlob = (dataURI: string) => {
   return new Blob([ia], { type: mimeString });
 };
 
-const maxJumps = 100;
+const maxJumps = 200;
 const cooldownTime = 2000;
 
 export type JumpDirection = "left" | "up" | "right" | "down" | "jump";
@@ -57,6 +58,7 @@ export default function AppWrapper() {
 
   const [jumpCount, setJumpCount] = useState(0);
   const [isCooldown, setIsCooldown] = useState(false);
+  const [winner, setWinner] = useState(false);
 
   const userStore = useUserStore();
   const { user, setUser } = userStore;
@@ -93,6 +95,7 @@ export default function AppWrapper() {
     const winnerId = data.playerId as string;
     if (winnerId === userId) {
       console.log("connngratulatu");
+      setWinner(true);
     }
   });
 
@@ -164,6 +167,14 @@ export default function AppWrapper() {
             </p>
           )}
           <div className="mt-12 flex flex-col gap-4">
+            {winner && (
+              <>
+                <div className="animate-bounce fixed top-2 justify-center flex w-full">
+                  WELLDONE!!
+                </div>
+                <ConfettiExplosion onComplete={() => setWinner(false)} />
+              </>
+            )}
             <div className="flex w-full justify-center">
               <PlayerButton
                 direction="up"

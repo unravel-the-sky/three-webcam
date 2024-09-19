@@ -144,7 +144,14 @@ const Scene = ({ players, isGameOn }: ShowTimeProps) => {
             ]}
           />
         ))}
-        <SpringSurface visible={isGameOn} />
+        <SpringSurface
+          visible={isGameOn}
+          name="spring1"
+          color="green"
+          args={[25, 0.1, 15]}
+          position={[0, 10, 20]}
+          rotation={[-Math.PI / 8, 0, 0]}
+        />
         <PhyLevelBox
           color="red"
           position={[0, 25, -30]}
@@ -152,10 +159,25 @@ const Scene = ({ players, isGameOn }: ShowTimeProps) => {
           rotation={[0, 0, 0]}
           visible={isGameOn}
         />
+        <SpringSurface
+          visible={isGameOn}
+          name="spring2"
+          color="green"
+          args={[25, 0.1, 15]}
+          position={[0, 60, 30]}
+          rotation={[-Math.PI / 8, 0, 0]}
+        />
+        {/* <PhyLevelBox
+          color="red"
+          position={[0, 35, -5]}
+          args={[20, 1, 10]}
+          rotation={[0, 0, 0]}
+          visible={isGameOn}
+        /> */}
         <PhyLevelBox
           color="red"
-          position={[0, 45, 30]}
-          args={[40, 2, 30]}
+          position={[0, 40, 20]}
+          args={[40, 2, 25]}
           rotation={[0, 0, 0]}
           visible={isGameOn}
         />
@@ -172,6 +194,7 @@ const Scene = ({ players, isGameOn }: ShowTimeProps) => {
           args={[40, 2, 60]}
           rotation={[0, 0, 0]}
           visible={isGameOn}
+          name="final"
         />
         <BoundingBox visible={boundary.visible} />
       </Physics>
@@ -181,19 +204,29 @@ const Scene = ({ players, isGameOn }: ShowTimeProps) => {
   );
 };
 
-const SpringSurface = ({ visible }: { visible: boolean }) => {
-  const sizes = [15, 0.1, 15];
+const SpringSurface = ({
+  args = [25, 0.1, 15],
+  position = [0, 10, 20],
+  rotation = [-Math.PI / 8, 0, 0],
+  visible,
+  name,
+  color = "green",
+}: Pick<BoxProps, "args" | "position" | "rotation"> & {
+  visible: boolean;
+  color: string;
+  name: string;
+}) => {
   const [ref] = useBox<THREE.Mesh>(() => ({
     mass: 0,
-    position: [0, 10, 20], // Position of the surface
-    rotation: [-Math.PI / 8, 0, 0],
-    args: [25, 0.1, 15], // A very thin box to act like a plane (width, height, depth)
+    position: position, // Position of the surface
+    rotation,
+    args: args, // A very thin box to act like a plane (width, height, depth)
   }));
 
   return (
-    <Box ref={ref} name="spring" visible={visible}>
+    <Box ref={ref} name={name} visible={visible}>
       <boxGeometry args={[25, 0.1, 15]} />
-      <meshStandardMaterial color="green" />
+      <meshStandardMaterial color={color} />
     </Box>
   );
 };
@@ -204,9 +237,11 @@ const PhyLevelBox = ({
   rotation = [0, 0, 0],
   visible,
   color,
+  name,
 }: Pick<BoxProps, "args" | "position" | "rotation"> & {
   visible: boolean;
   color: string;
+  name?: string;
 }) => {
   const { publish } = useChannel(CHANNEL_NAME);
   const [changed, setChanged] = useState(false);
@@ -230,11 +265,14 @@ const PhyLevelBox = ({
         if (e.contact.contactNormal[1] === -1) {
           console.log("Box hit the top of the rectangle!");
           const hitObject = e.contact.bi;
-          const { name } = hitObject;
-          console.log(`${name} hit!`);
+          const { name: playerName } = hitObject;
+          console.log(`${playerName} hit!`);
           if (!changed) {
             matRef.current.color = new THREE.Color("blue");
             setChanged(true);
+          }
+          if (name === "final") {
+            publish("winner", { playerId: playerName });
           }
         }
       },
@@ -251,6 +289,7 @@ const PhyLevelBox = ({
       receiveShadow
       castShadow
       visible={visible}
+      name="level"
     >
       <meshStandardMaterial ref={matRef} color={color} />
     </Box>
@@ -328,7 +367,7 @@ const PhyWallFloor = ({
         console.log(`${name} won!`);
         if (!announced) {
           publish("winner", { playerId: name });
-          setAnnounced(true);
+          // setAnnounced(true);
         }
       },
     }),
@@ -367,8 +406,19 @@ const PhyBox = (props: PhyBoxProps) => {
     allowSleep: true,
     angularDamping: 0.95,
     onCollide: (e) => {
-      if (e.body.name === "spring") {
-        api.applyImpulse([0, 160, 0], [0, 0, 10]);
+      if (e.body.name === "spring1") {
+        api.velocity.set(0, 0, 0);
+        api.angularVelocity.set(0, 0, 0);
+        api.applyImpulse([0, 300, 0], [0, 0, 1]);
+      }
+      if (e.body.name === "spring2") {
+        api.velocity.set(0, 0, 0);
+        api.angularVelocity.set(0, 0, 0);
+        api.applyImpulse([0, 310, 0], [0, 0, 1]);
+      }
+      if (e.body.name === "level") {
+        api.velocity.set(0, 0, 0);
+        api.angularVelocity.set(0, 0, 0);
       }
     },
     ...props,
