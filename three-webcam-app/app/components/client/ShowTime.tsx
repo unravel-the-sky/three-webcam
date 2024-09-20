@@ -316,29 +316,32 @@ const PhyBox = (props: PhyBoxProps) => {
   colorMap.colorSpace = THREE.SRGBColorSpace;
 
   const showTexture = useControls("Show texture", {
-    val: false,
+    val: true,
   });
 
   const { data } = usePlayerStore();
+
+  const lateralImpulse = 40;
+  const jumpImpulse = 50;
 
   useEffect(() => {
     const { jumpingPlayerId, direction } = data;
     if (jumpingPlayerId === props.id) {
       switch (direction) {
         case "left":
-          api.applyImpulse([0, 0, 45 / 1], [0, 0, 0]);
+          api.applyImpulse([0, 0, lateralImpulse / 1], [0, 0, 0]);
           break;
         case "jump":
           api.applyImpulse([0, 55, 0], [0, 0, 0]);
           break;
         case "right":
-          api.applyImpulse([0, 0, -45 / 1], [0, 0, 0]);
+          api.applyImpulse([0, 0, -lateralImpulse / 1], [0, 0, 0]);
           break;
         case "up":
-          api.applyImpulse([-45 / 1, 0, 0], [0, 0, 0]);
+          api.applyImpulse([-lateralImpulse / 1, 0, 0], [0, 0, 0]);
           break;
         case "down":
-          api.applyImpulse([45 / 1, 0, 0], [0, 0, 0]);
+          api.applyImpulse([lateralImpulse / 1, 0, 0], [0, 0, 0]);
           break;
         default:
           break;
