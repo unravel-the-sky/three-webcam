@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Jump, Player } from "@prisma/client";
 import { useChannel } from "ably/react";
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ShowTime from "./ShowTime";
 import { JumpDirection } from "./AppWrapper";
 import usePlayerStore from "@/app/store/playerStore";
@@ -35,7 +35,8 @@ export default function PlayerList() {
   const [showTime, setShowTime] = useState(false);
   const [startGame, setStartGame] = useState(false);
 
-  const [winnerList, setWinnerList] = useState<string[]>([]);
+  // const [winnerList, setWinnerList] = useState<string[]>([]);
+  const winnerList = useRef<string[]>([]);
 
   useEffect(() => {
     getAllPlayers().then((res) => {
@@ -98,8 +99,9 @@ export default function PlayerList() {
   const putWinner = async (playerId: string) => {
     const user = (await getPlayerById(playerId)) as Player;
     const { username } = user;
-    if (winnerList.includes(username)) return;
-    setWinnerList((winnerList) => [...winnerList, username]);
+    if (!winnerList.current.includes(username)) {
+      winnerList.current.push(username);
+    }
   };
 
   const togglePolling = () => {
@@ -161,9 +163,9 @@ export default function PlayerList() {
             </div>
             {showTime && (
               <div className="flex flex-col gap-2">
-                {winnerList &&
-                  winnerList.length > 0 &&
-                  winnerList.map((winner, index) => (
+                {winnerList.current &&
+                  winnerList.current.length > 0 &&
+                  winnerList.current.map((winner, index) => (
                     <div key={index} className="text-sm">
                       {winner} has made it!!
                     </div>
