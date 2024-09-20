@@ -3,6 +3,7 @@
 import {
   deleteAllPlayers,
   getAllPlayers,
+  getPlayerById,
   getRandomPlayers,
 } from "@/app/serverActions/player";
 import { CHANNEL_NAME } from "@/app/utils";
@@ -33,6 +34,8 @@ export default function PlayerList() {
 
   const [showTime, setShowTime] = useState(false);
   const [startGame, setStartGame] = useState(false);
+
+  const [winnerList, setWinnerList] = useState<string[]>([]);
 
   useEffect(() => {
     getAllPlayers().then((res) => {
@@ -85,6 +88,20 @@ export default function PlayerList() {
     setData({ stopPlayerId: playerId, direction });
   });
 
+  useChannel(CHANNEL_NAME, "winner", (message) => {
+    console.log("winner happened!");
+    const { data } = message;
+    const winnerId = data.playerId as string;
+    putWinner(winnerId);
+  });
+
+  const putWinner = async (playerId: string) => {
+    const user = (await getPlayerById(playerId)) as Player;
+    const { username } = user;
+    if (winnerList.includes(username)) return;
+    setWinnerList((winnerList) => [...winnerList, username]);
+  };
+
   const togglePolling = () => {
     setIsPolling(!isPolling);
   };
@@ -120,6 +137,8 @@ export default function PlayerList() {
     publish("isGameOn", { val: isDisabled });
   }, [isDisabled, publish]);
 
+  console.log("winners: ", winnerList);
+
   return (
     <>
       {showTime && (
@@ -131,12 +150,27 @@ export default function PlayerList() {
 
       <div className="flex flex-col gap-4 flex-1">
         <div className="flex gap-4 z-10">
-          <Button onClick={addRandos} className="w-fit">
-            add randos
-          </Button>
-          <Button onClick={removeRandos} className="w-fit">
-            remove randos
-          </Button>
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-4">
+              <Button onClick={addRandos} className="w-fit">
+                add randos
+              </Button>
+              <Button onClick={removeRandos} className="w-fit">
+                remove randos
+              </Button>
+            </div>
+            {showTime && (
+              <div className="flex flex-col gap-2">
+                {winnerList &&
+                  winnerList.length > 0 &&
+                  winnerList.map((winner, index) => (
+                    <div key={index} className="text-sm">
+                      {winner} has made it!!
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
 
           {showTime && (
             <div className="fixed flex justify-start bottom-8 z-20 gap-4">

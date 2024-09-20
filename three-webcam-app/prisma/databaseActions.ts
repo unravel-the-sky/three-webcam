@@ -44,6 +44,21 @@ export const getAllPlayersInDb = async (): Promise<Player[] | undefined> => {
     }
 }
 
+export const getPlayerByIdInDb = async (playerId: string): Promise<Player | null | undefined> => {
+    try {
+        const res = await prisma.player.findFirst({
+            where: {
+                id: playerId
+            }
+        })
+        return res;
+    } catch(err) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError) {
+            console.error('error happened in gellAllPostsInDb: ', err.message)
+        }
+    }
+}
+
 export const pollAllPlayersInDb = async (lastPollingDate: number) => {
     try {
         const res = await prisma.player.findMany({

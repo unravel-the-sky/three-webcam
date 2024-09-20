@@ -1,12 +1,17 @@
 'use server'
 
-import { createJumpForPlayerInDb, deleteAllPlayersInDb, deletePlayerByIdInDb, getAllJumpingPlayersInDb, getAllPlayersInDb, pollAllJumpsInDb, pollAllPlayersInDb } from "@/prisma/databaseActions";
+import { createJumpForPlayerInDb, deleteAllPlayersInDb, deletePlayerByIdInDb, getAllJumpingPlayersInDb, getAllPlayersInDb, getPlayerByIdInDb, pollAllJumpsInDb, pollAllPlayersInDb } from "@/prisma/databaseActions";
 import { Player } from "@prisma/client";
 import colors from "nice-color-palettes";
 
 export const getAllPlayers = async () => {
     const res = await getAllPlayersInDb();
     return res
+}
+
+export const getPlayerById = async (playerId: string) => {
+    const res = await getPlayerByIdInDb(playerId)
+    return res;
 }
 
 export const getRandomPlayers = async (count: number) => {
