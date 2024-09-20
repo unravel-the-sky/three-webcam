@@ -323,10 +323,10 @@ const PlayerButton = ({
       {/* <div className="text-sm">jump left</div> */}
       <Button
         variant={"blue"}
-        // onClick={() => onJumpPlayer(direction)}
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
+        onClick={() => onJumpPlayer(direction)}
+        // onMouseDown={handleMouseDown}
+        // onMouseUp={handleMouseUp}
+        // onMouseLeave={handleMouseLeave}
         className="shadow-lg text-lg w-fit h-fit rounded-full"
         disabled={isCooldown}
       >
