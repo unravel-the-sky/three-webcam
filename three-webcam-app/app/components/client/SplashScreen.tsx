@@ -5,31 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import Webcam from "./Webcam";
 import useUserStore from "@/app/store/userStore";
-import colors from "nice-color-palettes";
+import palettes from "nice-color-palettes";
 
-const niceColors = [...colors[3], ...colors[2], ...colors[6]];
-// [
-//   "#99b898",
-//   "#fecea8",
-//   "#ff847c",
-//   "#e84a5f",
-//   "#2a363b",
-//   "#fe4365",
-//   "#fc9d9a",
-//   "#f9cdad",
-//   "#c8c8a9",
-//   "#83af9b",
-// ];
+const niceColors = [...palettes[3], ...palettes[2], ...palettes[6]];
 
 export default function SplashScreen({ onNext }: { onNext: () => void }) {
   const [username, setUsername] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
-
-  const [showCamera, setShowCamera] = useState(false);
-  const userStore = useUserStore();
-  const { user, setUser } = userStore;
+  const { setUser } = useUserStore();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,30 +41,24 @@ export default function SplashScreen({ onNext }: { onNext: () => void }) {
         <RadioGroup
           value={selectedColor}
           onValueChange={setSelectedColor}
-          className="grid grid-cols-5 gap-2 mt-2"
+          className="mt-2 grid grid-cols-5 gap-2"
         >
           {niceColors.map((color) => (
             <div key={color} className="flex items-center space-x-2">
               <RadioGroupItem value={color} id={color} className="sr-only" />
               <Label
                 htmlFor={color}
-                className="w-8 h-8 rounded-full cursor-pointer flex items-center justify-center"
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full"
                 style={{ backgroundColor: color }}
               >
-                {selectedColor === color && (
-                  <div className="w-4 h-4 bg-white rounded-full" />
-                )}
+                {selectedColor === color && <div className="h-4 w-4 rounded-full bg-white" />}
               </Label>
             </div>
           ))}
         </RadioGroup>
       </div>
 
-      <Button
-        type="submit"
-        className="w-full"
-        disabled={!username || !selectedColor}
-      >
+      <Button type="submit" className="w-full" disabled={!username || !selectedColor}>
         Next
       </Button>
     </form>

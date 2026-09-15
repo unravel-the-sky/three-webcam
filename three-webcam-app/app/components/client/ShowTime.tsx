@@ -2,58 +2,57 @@
 
 import usePlayerStore from "@/app/store/playerStore";
 import { CHANNEL_NAME } from "@/app/utils";
-import { Player } from "@prisma/client";
+import type { Player } from "@/lib/generated/prisma/client";
 import {
-  BoxProps,
   Physics,
-  Triplet,
   useBox,
   usePlane,
   useSphere,
+  type BoxProps,
+  type PublicApi,
+  type Triplet,
 } from "@react-three/cannon";
 import { Box, OrbitControls, Plane, Sphere, Text } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { useChannel } from "ably/react";
 import { useControls } from "leva";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
+import { HDRLoader } from "three/examples/jsm/loaders/HDRLoader.js";
+import type { JumpDirection } from "./AppWrapper";
 import BoundingBox from "./BoundingBox";
+import { useCollisionToggle } from "./useCollisionToggle";
 
 interface ShowTimeProps {
   players: Player[];
   isGameOn: boolean;
 }
 
-const rgbeLoader = new RGBELoader();
+const PLACEHOLDER_TEXTURE = "/bugsbunny-square-1.png";
+const hdrLoader = new HDRLoader();
 
+/**
+ * The big-screen 3D scene. Every player is a physics-driven sphere textured with
+ * their selfie; phone d-pad presses arrive over Ably and become impulses.
+ * When the game is on, platforms and trampolines appear - first to land on the
+ * top platform wins.
+ */
 export default function ShowTime({ players, isGameOn }: ShowTimeProps) {
-  const showAxis = useControls("Show axis helper", {
-    val: false,
-  });
+  const showAxis = useControls("Show axis helper", { val: false });
 
   return (
-    <div className="flex-1 bg-slate-200 h-full">
+    <div className="h-full flex-1 bg-slate-200">
       <Canvas
-        camera={{
-          fov: 45,
-          near: 0.1,
-          far: 1000,
-          position: [20, 25, 20],
-        }}
+        camera={{ fov: 45, near: 0.1, far: 1000, position: [20, 25, 20] }}
         className="h-full"
-        shadows
+        // three r186 removed PCFSoftShadowMap (fiber's default for `shadows`), so pick PCF explicitly.
+        shadows="percentage"
         onCreated={({ scene }) => {
-          rgbeLoader.load(
-            "/environmentMaps/wasteland_clouds_puresky_2k.hdr",
-            (environmentMap) => {
-              environmentMap.mapping = THREE.EquirectangularReflectionMapping;
-
-              scene.background = environmentMap;
-              scene.environment = environmentMap;
-              console.log(environmentMap);
-            }
-          );
+          hdrLoader.load("/environmentMaps/wasteland_clouds_puresky_2k.hdr", (envMap) => {
+            envMap.mapping = THREE.EquirectangularReflectionMapping;
+            scene.background = envMap;
+            scene.environment = envMap;
+          });
         }}
       >
         <Lights />
@@ -66,33 +65,25 @@ export default function ShowTime({ players, isGameOn }: ShowTimeProps) {
 }
 
 const Scene = ({ players, isGameOn }: ShowTimeProps) => {
-  const boundingBox = useControls("Show bounding box", {
-    show: false,
-  });
+  const boundingBox = useControls("Show bounding box", { show: false });
+
   return (
     <>
       <Physics broadphase="SAP" gravity={[0, -50, 0]} allowSleep>
-        <PhyPlane
-          color="lightblue"
-          position={[0, 0, 0]}
-          rotation={[-Math.PI / 2, 0, 0]}
-        />
+        <PhyPlane color="lightblue" position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]} />
 
         {players.map(({ image, id, color, username }, index) => (
-          <PhyBox
-            imgUrl={image}
-            id={id}
-            color={color}
+          <PlayerBall
             key={id}
+            id={id}
+            imgUrl={image}
+            color={color}
             username={username}
-            mass={5}
-            position={[
-              (Math.random() - 0.5) * 4,
-              10 + (players.length - index) * 4,
-              Math.random() - 0.5,
-            ]}
+            spawnHeight={10 + (players.length - index) * 4}
           />
         ))}
+
+        {/* The course: trampolines (green) launch balls up to the red platforms. */}
         <SpringSurface
           visible={isGameOn}
           name="spring1"
@@ -146,6 +137,13 @@ const Scene = ({ players, isGameOn }: ShowTimeProps) => {
   );
 };
 
+type LevelProps = Pick<BoxProps, "args" | "position" | "rotation"> & {
+  visible: boolean;
+  color: string;
+  name?: string;
+};
+
+/** A thin tilted box that catapults any ball touching it (see PlayerBall.onCollide). */
 const SpringSurface = ({
   args = [25, 0.1, 15],
   position = [0, 10, 20],
@@ -153,38 +151,19 @@ const SpringSurface = ({
   visible,
   name,
   color = "green",
-}: Pick<BoxProps, "args" | "position" | "rotation"> & {
-  visible: boolean;
-  color: string;
-  name: string;
-}) => {
-  const [ref, api] = useBox<THREE.Mesh>(() => ({
-    mass: 0,
-    position: position, // Position of the surface
-    rotation,
-    args: args, // A very thin box to act like a plane (width, height, depth)
-  }));
-
-  useEffect(() => {
-    if (visible) {
-      // Disable collision
-      api.collisionFilterGroup.set(1);
-      api.collisionFilterMask.set(1);
-    } else {
-      // Enable collision (reset to default group and mask)
-      api.collisionFilterGroup.set(0);
-      api.collisionFilterMask.set(0);
-    }
-  }, [api.collisionFilterGroup, api.collisionFilterMask, visible]);
+}: LevelProps) => {
+  const [ref, api] = useBox<THREE.Mesh>(() => ({ mass: 0, position, rotation, args }));
+  useCollisionToggle(api, visible);
 
   return (
     <Box ref={ref} name={name} visible={visible}>
-      <boxGeometry args={[25, 0.1, 15]} />
+      <boxGeometry args={args} />
       <meshStandardMaterial color={color} />
     </Box>
   );
 };
 
+/** A static platform. Turns blue once any ball lands on top; the `final` one announces the winner. */
 const PhyLevelBox = ({
   args = [1, 1, 1],
   position,
@@ -192,59 +171,32 @@ const PhyLevelBox = ({
   visible,
   color,
   name,
-}: Pick<BoxProps, "args" | "position" | "rotation"> & {
-  visible: boolean;
-  color: string;
-  name?: string;
-}) => {
+}: LevelProps) => {
   const { publish } = useChannel(CHANNEL_NAME);
   const [changed, setChanged] = useState(false);
-
   const matRef = useRef<THREE.MeshStandardMaterial>(null!);
 
   const [ref, api] = useBox(
     () => ({
-      args: args,
+      args,
       mass: 0,
       position,
       rotation,
       onCollide: (e) => {
-        const boxPosition = e.body.position; // Position of the box
-        const rectanglePosition = e.target.position; // Position of the rectangle
+        // Contact normal pointing straight down means the ball hit the top face.
+        if (e.contact.contactNormal[1] !== -1) return;
 
-        // Assuming rectanglePosition.y is the center of the rectangle and rectangleHeight is its height
-        const topOfRectangle = rectanglePosition.y + 2 / 2;
-
-        // If the box is above or just near the top of the rectangle, it's a top collision
-        if (e.contact.contactNormal[1] === -1) {
-          console.log("Box hit the top of the rectangle!");
-          const hitObject = e.contact.bi;
-          const { name: playerName } = hitObject;
-          console.log(`${playerName} hit!`);
-          if (!changed) {
-            matRef.current.color = new THREE.Color("blue");
-            setChanged(true);
-          }
-          if (name === "final") {
-            publish("winner", { playerId: playerName });
-          }
+        const { name: playerId } = e.contact.bi;
+        if (!changed) {
+          matRef.current.color = new THREE.Color("blue");
+          setChanged(true);
         }
+        if (name === "final") publish("winner", { playerId });
       },
     }),
-    useRef<THREE.Mesh>(null)
+    useRef<THREE.Mesh>(null),
   );
-
-  useEffect(() => {
-    if (visible) {
-      // Disable collision
-      api.collisionFilterGroup.set(1);
-      api.collisionFilterMask.set(1);
-    } else {
-      // Enable collision (reset to default group and mask)
-      api.collisionFilterGroup.set(0);
-      api.collisionFilterMask.set(0);
-    }
-  }, [api.collisionFilterGroup, api.collisionFilterMask, visible]);
+  useCollisionToggle(api, visible);
 
   return (
     <Box
@@ -262,14 +214,14 @@ const PhyLevelBox = ({
   );
 };
 
-// PhyPlane component
-interface PhyPlaneProps {
+const PhyPlane = ({
+  color,
+  ...props
+}: {
   color: string;
   position?: Triplet;
   rotation?: Triplet;
-}
-
-const PhyPlane = ({ color, ...props }: PhyPlaneProps) => {
+}) => {
   const [ref] = usePlane<THREE.Mesh>(() => ({ ...props }));
 
   return (
@@ -279,109 +231,92 @@ const PhyPlane = ({ color, ...props }: PhyPlaneProps) => {
   );
 };
 
-// PhyBox component
-interface PhyBoxProps {
+interface PlayerBallProps {
   imgUrl: string;
-  position?: Triplet;
   color: string;
   id: string;
   username: string;
-  mass: number;
+  /** Balls are stacked at spawn so they don't overlap. */
+  spawnHeight: number;
 }
 
-const PhyBox = (props: PhyBoxProps) => {
-  const size = 2;
+const BALL_RADIUS = 2;
+const BALL_MASS = 5;
+const LATERAL_IMPULSE = 40;
+const JUMP_IMPULSE = 55;
+const SPRING_IMPULSE: Record<string, number> = { spring1: 300, spring2: 310 };
+const MOVE_IMPULSE: Record<JumpDirection, Triplet> = {
+  left: [0, 0, LATERAL_IMPULSE],
+  right: [0, 0, -LATERAL_IMPULSE],
+  up: [-LATERAL_IMPULSE, 0, 0],
+  down: [LATERAL_IMPULSE, 0, 0],
+  jump: [0, JUMP_IMPULSE, 0],
+};
+
+const PlayerBall = (props: PlayerBallProps) => {
+  // The collide callback is created before `api` exists; read it through a ref.
+  const apiRef = useRef<PublicApi | null>(null);
+
   const [ref, api] = useSphere<THREE.Mesh>(() => ({
-    // args: [size, size, size],
-    args: [size],
+    args: [BALL_RADIUS],
+    mass: BALL_MASS,
     allowSleep: true,
     angularDamping: 0.95,
+    position: [(Math.random() - 0.5) * 4, props.spawnHeight, Math.random() - 0.5],
     onCollide: (e) => {
-      if (e.body.name === "spring1") {
-        api.velocity.set(0, 0, 0);
-        api.angularVelocity.set(0, 0, 0);
-        api.applyImpulse([0, 300, 0], [0, 0, 1]);
-      }
-      if (e.body.name === "spring2") {
-        api.velocity.set(0, 0, 0);
-        api.angularVelocity.set(0, 0, 0);
-        api.applyImpulse([0, 310, 0], [0, 0, 1]);
-      }
+      // Trampolines: kill current motion, then launch.
+      const impulse = SPRING_IMPULSE[e.body.name];
+      const api = apiRef.current;
+      if (!impulse || !api) return;
+      api.velocity.set(0, 0, 0);
+      api.angularVelocity.set(0, 0, 0);
+      api.applyImpulse([0, impulse, 0], [0, 0, 1]);
     },
-    ...props,
   }));
-  const colorMap = props.imgUrl
-    ? new THREE.TextureLoader().load(props.imgUrl)
-    : new THREE.TextureLoader().load("/bugsbunny-square-1.png");
-  colorMap.colorSpace = THREE.SRGBColorSpace;
-
-  const showTexture = useControls("Show texture", {
-    val: true,
-  });
-
-  const { data } = usePlayerStore();
-
-  const lateralImpulse = 40;
-  const jumpImpulse = 50;
 
   useEffect(() => {
-    const { jumpingPlayerId, direction } = data;
-    if (jumpingPlayerId === props.id) {
-      switch (direction) {
-        case "left":
-          api.applyImpulse([0, 0, lateralImpulse / 1], [0, 0, 0]);
-          break;
-        case "jump":
-          api.applyImpulse([0, 55, 0], [0, 0, 0]);
-          break;
-        case "right":
-          api.applyImpulse([0, 0, -lateralImpulse / 1], [0, 0, 0]);
-          break;
-        case "up":
-          api.applyImpulse([-lateralImpulse / 1, 0, 0], [0, 0, 0]);
-          break;
-        case "down":
-          api.applyImpulse([lateralImpulse / 1, 0, 0], [0, 0, 0]);
-          break;
-        default:
-          break;
-      }
-    }
-  }, [api, data, props.id]);
+    apiRef.current = api;
+  }, [api]);
 
-  const targetRotation = new THREE.Euler(0, 0, 0);
+  const colorMap = useMemo(() => {
+    const texture = new THREE.TextureLoader().load(props.imgUrl || PLACEHOLDER_TEXTURE);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }, [props.imgUrl]);
+
+  const showTexture = useControls("Show texture", { val: true });
+
+  // Phone d-pad → impulse. "up"/"down" are along x, "left"/"right" along z,
+  // which matches the default camera looking in from [20, 25, 20].
+  useEffect(
+    () =>
+      usePlayerStore.subscribe(({ data }) => {
+        if (data.jumpingPlayerId !== props.id || !data.direction) return;
+        api.applyImpulse(MOVE_IMPULSE[data.direction], [0, 0, 0]);
+      }),
+    [api, props.id],
+  );
 
   useChannel(CHANNEL_NAME, "respawn", (message) => {
-    const { data: respawn } = message;
-    const { playerId } = respawn;
-    if (playerId === props.id) {
-      console.log("respawn meee");
-      ref.current?.lookAt(0, 30, 0);
-      api.rotation.set(targetRotation.x, targetRotation.y, targetRotation.z);
-      api.position.set(0, 20 + Math.random() * 5, 0);
-    }
+    if (message.data.playerId !== props.id) return;
+    ref.current?.lookAt(0, 30, 0);
+    api.rotation.set(0, 0, 0);
+    api.position.set(0, 20 + Math.random() * 5, 0);
   });
 
-  const maxAngularVelocity = 50;
-
   return (
-    <>
-      <Sphere
-        // args={[size, size, size]}
-        args={[size]}
-        ref={ref}
-        name={props.id}
-        userData={{ color: props.color }}
-        onClick={() => {
-          api.applyImpulse(
-            // [(Math.random() - 0.5) * 10, Math.random() * 50, 0],
-            [10, 50, 0],
-            [0, -1, 0]
-          );
-        }}
-        receiveShadow
-        castShadow
-      >
+    <Sphere
+      args={[BALL_RADIUS]}
+      ref={ref}
+      name={props.id}
+      userData={{ color: props.color }}
+      onClick={() => api.applyImpulse([10, 50, 0], [0, -1, 0])}
+      receiveShadow
+      castShadow
+    >
+      {/* Text suspends while its font loads. Catch that here: if it bubbles up to the
+          Canvas, React's dev StrictMode re-mount cycle loses the WebGL context. */}
+      <Suspense fallback={null}>
         <Text
           scale={[0.5, 0.5, 0.5]}
           color="black"
@@ -390,38 +325,26 @@ const PhyBox = (props: PhyBoxProps) => {
         >
           {props.username}
         </Text>
-        {showTexture.val ? (
-          <meshPhongMaterial map={colorMap} />
-        ) : (
-          <meshStandardMaterial
-            color={new THREE.Color(props.color)}
-            roughness={0.3}
-            metalness={0.1}
-          />
-        )}
-      </Sphere>
-    </>
+      </Suspense>
+      {showTexture.val ? (
+        <meshPhongMaterial map={colorMap} />
+      ) : (
+        <meshStandardMaterial color={new THREE.Color(props.color)} roughness={0.3} metalness={0.1} />
+      )}
+    </Sphere>
   );
 };
 
 const Lights = () => {
   const directionalCtl = useControls("Directional Light", {
     visible: false,
-    position: {
-      x: 9.3,
-      y: 7.0,
-      z: 1.4,
-    },
+    position: { x: 9.3, y: 7.0, z: 1.4 },
     castShadow: true,
   });
 
   const spotCtl = useControls("Spot Light", {
     visible: true,
-    position: {
-      x: -25,
-      y: 45,
-      z: 45,
-    },
+    position: { x: -25, y: 45, z: 45 },
     castShadow: true,
   });
 
@@ -429,11 +352,7 @@ const Lights = () => {
     <>
       <directionalLight
         visible={directionalCtl.visible}
-        position={[
-          directionalCtl.position.x,
-          directionalCtl.position.y,
-          directionalCtl.position.z,
-        ]}
+        position={[directionalCtl.position.x, directionalCtl.position.y, directionalCtl.position.z]}
         castShadow={directionalCtl.castShadow}
       />
       <spotLight
@@ -443,7 +362,7 @@ const Lights = () => {
         intensity={2 * Math.PI}
         angle={0.3}
         decay={0}
-        color={new THREE.Color("white")}
+        color="white"
         penumbra={1}
       />
       <spotLight

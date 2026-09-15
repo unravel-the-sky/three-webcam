@@ -3,77 +3,54 @@
 import { Button } from "@/components/ui/button";
 import { Camera } from "lucide-react";
 import { useState } from "react";
+import Image from "next/image";
 import Webcam from "./Webcam";
 import useUserStore from "@/app/store/userStore";
-import Image from "next/image";
 
 export default function TakePhoto({ onNext }: { onNext: () => void }) {
   const [showCam, setShowCam] = useState(false);
-  const handleTakePhoto = () => {
-    setShowCam(true);
-  };
-
-  const userStore = useUserStore();
-  const { user, setUser } = userStore;
+  const { user, setUser } = useUserStore();
 
   const handleComplete = (image: string) => {
-    setUser({
-      color: user.color,
-      username: user.username,
-      image,
-    });
+    setUser({ ...user, image });
     setShowCam(false);
   };
 
-  const handleContinue = () => {
-    onNext();
-  };
-
-  const handleRetake = () => {
-    setShowCam(true);
-  };
+  if (showCam) return <Webcam onComplete={handleComplete} />;
 
   return (
     <div className="flex w-full justify-center">
-      {showCam ? (
-        <Webcam onComplete={handleComplete} />
-      ) : (
-        <div className="flex flex-col gap-4 w-[80%]">
-          {user.image ? (
-            <div className="flex w-full justify-center items-center">
-              <Image
-                className="h-[100%] object-contain"
-                src={user.image}
-                width={500}
-                height={500}
-                alt="image"
-              />
-            </div>
-          ) : (
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 flex flex-col items-center justify-center">
-              <Camera className="w-12 h-12 text-gray-400 mb-4" />
-
-              <p className="text-sm text-gray-500">
-                Your photo will appear here
-              </p>
-            </div>
-          )}
-          {user.image ? (
-            <div className="flex justify-between w-full gap-4">
-              <Button variant={"destructive"} onClick={handleRetake}>
-                Retake
-              </Button>
-              <Button variant={"default"} onClick={handleContinue}>
-                OK?
-              </Button>
-            </div>
-          ) : (
-            <Button onClick={handleTakePhoto} className="w-full">
-              Take a Photo
+      <div className="flex w-[80%] flex-col gap-4">
+        {user.image ? (
+          <div className="flex w-full items-center justify-center">
+            <Image
+              className="h-full object-contain"
+              src={user.image}
+              width={500}
+              height={500}
+              alt="your selfie"
+              unoptimized
+            />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-12">
+            <Camera className="mb-4 h-12 w-12 text-gray-400" />
+            <p className="text-sm text-gray-500">Your photo will appear here</p>
+          </div>
+        )}
+        {user.image ? (
+          <div className="flex w-full justify-between gap-4">
+            <Button variant="destructive" onClick={() => setShowCam(true)}>
+              Retake
             </Button>
-          )}
-        </div>
-      )}
+            <Button onClick={onNext}>OK?</Button>
+          </div>
+        ) : (
+          <Button onClick={() => setShowCam(true)} className="w-full">
+            Take a Photo
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

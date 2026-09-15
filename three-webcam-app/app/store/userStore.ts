@@ -1,28 +1,20 @@
 import { create } from "zustand";
 
 export type UserType = {
-    username: string;
-    color: string;
-    image?: string;
-}
+  username: string;
+  color: string;
+  image?: string;
+};
 
-export type UserStore = {
-    user: UserType,
-    setUser: (payload: UserType) => void;
-}
+type UserStore = {
+  user: UserType;
+  setUser: (payload: UserType) => void;
+};
 
-const useUserStore = create<UserStore>((set, get) => ({
-    user: {
-        color: '',
-        username: ''
-    },
-    setUser: (payload: UserType) => set(
-        (state) => (
-            {
-                user: { ...state.user, ...payload }
-            }
-        )
-    )
-}))
+/** Sign-up form state on the phone, kept until the player is created. */
+const useUserStore = create<UserStore>((set) => ({
+  user: { color: "", username: "" },
+  setUser: (payload) => set((state) => ({ user: { ...state.user, ...payload } })),
+}));
 
 export default useUserStore;

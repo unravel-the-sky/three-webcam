@@ -1,50 +1,25 @@
-'use server'
+"use server";
 
-import { OrganisationDto, SubmittedFormData } from "@/lib/types";
-import { revalidatePath } from "next/cache";
-import { getAwsDownloadUrl, getFileUrl, uploadImage, uploadPdf } from "./awsFuncs";
-import { createPlayerInDb, PlayerDto } from "@/prisma/databaseActions";
+import { uploadImage } from "@/lib/s3";
+import { createPlayerInDb } from "@/prisma/databaseActions";
 
-export const submitForm = async (
-    formData: FormData,
-  ): Promise<any> => {
-    const rawFormData = {
-      username: formData.get("username"),
-      color: formData.get("color"),
-      image: formData.get("image"),
-    };
+/** Creates a player from the sign-up form: uploads the selfie to S3, then stores the player row. */
+export const submitForm = async (formData: FormData) => {
+  const username = String(formData.get("username") ?? "").trim();
+  const color = String(formData.get("color") ?? "");
+  const image = formData.get("image");
 
-    let avatar = '';
+  if (!username) throw new Error("username is required");
 
-    // now upload the image to s3 and get the download url
-    const image = rawFormData.image as File;
-    const username = rawFormData.username as string;
-    const uploadedFileKey = await uploadImage(
-      image,
-      username,
-    );
-    if (uploadedFileKey) {
-      const url = await getFileUrl(uploadedFileKey); // file name here
-      if (url) avatar = url;
+  let avatar = "";
+  if (image instanceof File && image.size > 0) {
+    try {
+      avatar = await uploadImage(image, username);
+    } catch (err) {
+      // A missing photo is not fatal - the ball falls back to a placeholder texture.
+      console.error("[submitForm] image upload failed:", err);
     }
+  }
 
-    const player: PlayerDto = {
-      username,
-      color: rawFormData.color as string,
-      image: avatar
-    }
-
-    const res = await createPlayerInDb(player)
-  
-    // if (organisationId) {
-    //   await updateOrganisationById(organisationToCreate, organisationId)
-    // } else {
-    //   await addOrganisationToDb(organisationToCreate);
-    // }
-  
-    revalidatePath('/')
-  
-    return res;
-  };
-
-  
+  return createPlayerInDb({ username, color, image: avatar });
+};

@@ -1,62 +1,28 @@
-'use server'
+"use server";
 
-import { createJumpForPlayerInDb, deleteAllPlayersInDb, deletePlayerByIdInDb, getAllJumpingPlayersInDb, getAllPlayersInDb, getPlayerByIdInDb, pollAllJumpsInDb, pollAllPlayersInDb } from "@/prisma/databaseActions";
-import { Player } from "@prisma/client";
-import colors from "nice-color-palettes";
+import {
+  deleteAllPlayersInDb,
+  deletePlayerByIdInDb,
+  getAllPlayersInDb,
+  getPlayerByIdInDb,
+} from "@/prisma/databaseActions";
+import type { Player } from "@/lib/generated/prisma/client";
+import palettes from "nice-color-palettes";
 
-export const getAllPlayers = async () => {
-    const res = await getAllPlayersInDb();
-    return res
-}
+export const getAllPlayers = async () => getAllPlayersInDb();
 
-export const getPlayerById = async (playerId: string) => {
-    const res = await getPlayerByIdInDb(playerId)
-    return res;
-}
+export const getPlayerById = async (playerId: string) => getPlayerByIdInDb(playerId);
 
-export const getRandomPlayers = async (count: number) => {
-    const randomPlayers: Player[] = Array(count)
-        .fill(true)
-        .map((item, index) => (
-            {
-                color: colors[Math.round(Math.random() * 50)][1],
-                id: (Math.random() * 100).toString(),
-                image: '',
-                username: `Random ${index}`,
-                createdAt: new Date(Date.now()),
-                isOnline: false
-            }
-        ))
+export const deleteAllPlayers = async () => deleteAllPlayersInDb();
 
-    return randomPlayers
-}
+export const deletePlayerById = async (id: string) => deletePlayerByIdInDb(id);
 
-export const pollAllPlayers = async (lastFetchDate: number) => {
-    const res = await pollAllPlayersInDb(lastFetchDate)
-    if (res) return res;
-}
-
-export const jumpPlayerById = async (id: string, state: boolean) => {
-    const res = await createJumpForPlayerInDb({id, state})
-    return res;
-}
-
-export const pollJumpingPlayers = async (lastFetchDate: number) => {
-    const res = await pollAllJumpsInDb(lastFetchDate)
-    if (res) return res;
-}
-
-export const getJumpingPlayers = async () => {
-    const res = await getAllJumpingPlayersInDb()
-    return res;
-}
-
-
-export const deleteAllPlayers = async () => {
-    const res = await deleteAllPlayersInDb()
-    return res;
-}
-export const deletePlayerById = async (id: string) => {
-    const res = await deletePlayerByIdInDb(id)
-    return res;
-}
+/** Fake players (not persisted) for stress-testing the 3D scene from the admin panel. */
+export const getRandomPlayers = async (count: number): Promise<Player[]> =>
+  Array.from({ length: count }, (_, index) => ({
+    id: `random-${crypto.randomUUID()}`,
+    username: `Random ${index}`,
+    color: palettes[Math.floor(Math.random() * 50)][1],
+    image: "",
+    createdAt: new Date(),
+  }));

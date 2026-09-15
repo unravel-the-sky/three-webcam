@@ -6,16 +6,8 @@ import {
   getPlayerById,
   getRandomPlayers,
 } from "@/app/serverActions/player";
-import { CHANNEL_NAME } from "@/app/utils";
-import { Button } from "@/components/ui/button";
-import { Jump, Player } from "@prisma/client";
-import { useChannel } from "ably/react";
-import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
-import ShowTime from "./ShowTime";
-import { JumpDirection } from "./AppWrapper";
 import usePlayerStore from "@/app/store/playerStore";
-import ShowTimeNew from "./ShowTimeNew";
+import { CHANNEL_NAME } from "@/app/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,131 +19,87 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import type { Player } from "@/lib/generated/prisma/client";
+import { useChannel } from "ably/react";
+import Image from "next/image";
+import { useEffect, useState } from "react";
+import type { JumpDirection } from "./AppWrapper";
+import ShowTime from "./ShowTime";
 
+/**
+ * The big-screen side of the demo: a waiting room listing everyone who signed up,
+ * and the "show time" 3D scene where their balls race up the platforms.
+ */
 export default function PlayerList() {
-  const [isPolling, setIsPolling] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
-
   const [showTime, setShowTime] = useState(false);
   const [startGame, setStartGame] = useState(false);
+  const [winners, setWinners] = useState<string[]>([]);
 
-  // const [winnerList, setWinnerList] = useState<string[]>([]);
-  const winnerList = useRef<string[]>([]);
+  const { setData } = usePlayerStore();
+  const { publish } = useChannel(CHANNEL_NAME);
 
   useEffect(() => {
-    getAllPlayers().then((res) => {
-      if (res) {
-        setPlayers(res);
-      }
-    });
+    getAllPlayers().then(setPlayers);
   }, []);
 
-  const addRandos = () => {
-    getRandomPlayers(50).then((res) => {
-      if (res) {
-        setPlayers((players) => [...players, ...res]);
-      }
-    });
-  };
-
-  const removeRandos = () => {
-    setPlayers((players) =>
-      players.filter((player) => !player.username.includes("Random"))
-    );
-  };
-
   useChannel(CHANNEL_NAME, "newPlayer", (message) => {
-    const { data } = message;
-    const player = data.player as Player;
+    const player = message.data.player as Player;
     setPlayers((players) => [...players, player]);
   });
 
   useChannel(CHANNEL_NAME, "deletePlayer", (message) => {
-    const { data } = message;
-    const playerId = data.playerId as string;
+    const playerId = message.data.playerId as string;
     setPlayers((players) => players.filter((item) => item.id !== playerId));
   });
 
-  const { setData } = usePlayerStore();
-
   useChannel(CHANNEL_NAME, "jump", (message) => {
-    const { data: jumpData } = message;
-    const { playerId } = jumpData;
-    const direction = jumpData.direction as JumpDirection;
-    setData({ jumpingPlayerId: playerId, direction, stopPlayerId: "" });
+    const { playerId, direction } = message.data as {
+      playerId: string;
+      direction: JumpDirection;
+    };
+    setData({ jumpingPlayerId: playerId, direction });
   });
 
-  useChannel(CHANNEL_NAME, "stop", (message) => {
-    const { data: stopData } = message;
-    const { playerId } = stopData;
-    const direction = stopData.direction as JumpDirection;
-    // console.log("i got stop player! ", playerId);
-    setData({ stopPlayerId: playerId, direction });
+  useChannel(CHANNEL_NAME, "winner", async (message) => {
+    const player = await getPlayerById(message.data.playerId as string);
+    if (!player) return;
+    setWinners((list) =>
+      list.includes(player.username) ? list : [...list, player.username],
+    );
   });
 
-  useChannel(CHANNEL_NAME, "winner", (message) => {
-    console.log("winner happened!");
-    const { data } = message;
-    const winnerId = data.playerId as string;
-    putWinner(winnerId);
-  });
+  // Freeze the phone controls while the show is on but the game hasn't started.
+  const controlsLocked = showTime && !startGame;
+  useEffect(() => {
+    publish("isGameOn", { val: controlsLocked });
+  }, [controlsLocked, publish]);
 
-  const putWinner = async (playerId: string) => {
-    const user = (await getPlayerById(playerId)) as Player;
-    const { username } = user;
-    if (!winnerList.current.includes(username)) {
-      winnerList.current.push(username);
-    }
+  const addRandos = async () => {
+    const randos = await getRandomPlayers(50);
+    setPlayers((players) => [...players, ...randos]);
   };
 
-  const togglePolling = () => {
-    setIsPolling(!isPolling);
-  };
-
-  const handleShowTime = () => {
-    setShowTime(!showTime);
+  const removeRandos = () => {
+    setPlayers((players) => players.filter((p) => !p.id.startsWith("random-")));
   };
 
   const handleDeleteAll = async () => {
-    // todo
     await deleteAllPlayers();
-    getAllPlayers().then((res) => {
-      if (res) {
-        setPlayers(res);
-      }
-    });
+    setPlayers(await getAllPlayers());
   };
-
-  const toggleStartGame = () => {
-    setStartGame(!startGame);
-  };
-
-  // const [isDisabled, setIsDisabled] = useState(false);
-
-  const { publish } = useChannel(CHANNEL_NAME);
-
-  const isDisabled = useMemo(() => {
-    if (showTime === true && startGame === false) return true;
-    return false;
-  }, [showTime, startGame]);
-
-  useEffect(() => {
-    publish("isGameOn", { val: isDisabled });
-  }, [isDisabled, publish]);
-
-  console.log("winners: ", winnerList);
 
   return (
     <>
       {showTime && (
-        <div className="fixed w-full left-0 top-0 h-full bg-gray-600 p-4 z-10">
+        <div className="fixed left-0 top-0 z-10 h-full w-full bg-gray-600 p-4">
           <ShowTime players={players} isGameOn={startGame} />
-          {/* <ShowTimeNew players={players} isGameOn={startGame} /> */}
         </div>
       )}
 
-      <div className="flex flex-col gap-4 flex-1">
-        <div className="flex gap-4 z-10">
+      <div className="flex flex-1 flex-col gap-4">
+        <div className="z-10 flex gap-4">
           <div className="flex flex-col gap-2">
             <div className="flex gap-4">
               <Button onClick={addRandos} className="w-fit">
@@ -161,57 +109,43 @@ export default function PlayerList() {
                 remove randos
               </Button>
             </div>
-            {showTime && (
-              <div className="flex flex-col gap-2">
-                {winnerList.current &&
-                  winnerList.current.length > 0 &&
-                  winnerList.current.map((winner, index) => (
-                    <div key={index} className="text-sm">
-                      {winner} has made it!!
-                    </div>
-                  ))}
-              </div>
-            )}
+            {showTime &&
+              winners.map((winner) => (
+                <div key={winner} className="text-sm">
+                  {winner} has made it!!
+                </div>
+              ))}
           </div>
 
           {showTime && (
-            <div className="fixed flex justify-start bottom-8 z-20 gap-4">
-              <Button
-                onClick={toggleStartGame}
-                variant={"orange"}
-                className="w-fit"
-              >
+            <div className="fixed bottom-8 z-20 flex justify-start gap-4">
+              <Button onClick={() => setStartGame((v) => !v)} variant="orange" className="w-fit">
                 {startGame ? "stop game" : "start game"}
               </Button>
-              <Button onClick={handleShowTime} className="w-fit">
+              <Button onClick={() => setShowTime(false)} className="w-fit">
                 stop the show
               </Button>
             </div>
           )}
-          <div className="fixed flex flex-col items-end justify-end pr-10 right-0 bottom-8">
-            <Image
-              src="/qr-code.png"
-              width={200}
-              height={200}
-              alt={"QR code"}
-            />
+          <div className="fixed bottom-8 right-0 flex flex-col items-end justify-end pr-10">
+            <Image src="/qr-code.png" width={200} height={200} alt="QR code to join" priority />
           </div>
         </div>
 
-        {players && players.length > 0 && (
-          <div className="flex flex-col gap-4 p-4 flex-1">
+        {players.length > 0 && (
+          <div className="flex flex-1 flex-col gap-4 p-4">
             <div>num players: {players.length}</div>
             <div className="flex flex-wrap gap-4">
-              {players.map((player, index) => (
+              {players.map((player) => (
                 <PlayerPicture player={player} key={player.id} />
               ))}
               <div className="mt-4 flex w-full gap-4">
-                <Button onClick={handleShowTime} className="w-fit">
+                <Button onClick={() => setShowTime(true)} className="w-fit">
                   show time!
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant={"destructive"} className="w-fit">
+                    <Button variant="destructive" className="w-fit">
                       delete all
                     </Button>
                   </AlertDialogTrigger>
@@ -224,10 +158,7 @@ export default function PlayerList() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>nah</AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-[#1b3b64]"
-                        onClick={handleDeleteAll}
-                      >
+                      <AlertDialogAction className="bg-[#1b3b64]" onClick={handleDeleteAll}>
                         yez
                       </AlertDialogAction>
                     </AlertDialogFooter>
@@ -242,55 +173,51 @@ export default function PlayerList() {
   );
 }
 
+const nudgeClass: Record<JumpDirection, string> = {
+  left: "-translate-x-2",
+  right: "translate-x-2",
+  up: "-translate-y-2",
+  down: "translate-y-2",
+  jump: "scale-110",
+};
+
+/** A player card in the waiting room; nudges in the direction of their latest move. */
 const PlayerPicture = ({ player }: { player: Player }) => {
-  const { data } = usePlayerStore();
   const [jump, setJump] = useState<JumpDirection>();
 
+  // Subscribe directly so only the card that moved re-renders.
   useEffect(() => {
-    if (data.jumpingPlayerId === player.id) {
-      const { direction } = data;
-      setJump(direction);
-      setTimeout(() => {
-        setJump(undefined);
-      }, 200);
-    }
-  }, [data, player.id]);
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const unsubscribe = usePlayerStore.subscribe(({ data }) => {
+      if (data.jumpingPlayerId !== player.id) return;
+      setJump(data.direction);
+      clearTimeout(timeout);
+      timeout = setTimeout(() => setJump(undefined), 200);
+    });
+    return () => {
+      unsubscribe();
+      clearTimeout(timeout);
+    };
+  }, [player.id]);
 
   return (
     <div
-      key={player.id}
-      className={`flex flex-col p-2 outline-dashed hover:bg-gray-200 hover:-translate-y-2 hover:shadow-lg transition-all ${
-        jump === "left"
-          ? "-translate-x-2"
-          : jump === "right"
-          ? "translate-x-2"
-          : jump === "up"
-          ? "-translate-y-2"
-          : jump === "down"
-          ? "translate-y-2"
-          : jump === "jump"
-          ? "scale-110"
-          : null
+      className={`flex flex-col p-2 outline-dashed transition-all hover:-translate-y-2 hover:bg-gray-200 hover:shadow-lg ${
+        jump ? nudgeClass[jump] : ""
       }`}
     >
       <p className="text-sm">username: {player.username}</p>
-      {player.image ? (
-        <Image
-          src={new URL(player.image).toString()}
-          alt="img"
-          className="object-cover h-[100px] w-[150px]"
-          width={150}
-          height={100}
-        />
-      ) : (
-        <Image
-          src={"/bugsbunny-square-1.png"}
-          alt="img"
-          className="object-cover h-[100px] w-[150px]"
-          width={150}
-          height={100}
-        />
-      )}
+      {/* Selfies are already small (<=640px JPEG) and served straight from S3, so skip
+          Next's image optimizer: nothing to gain, and its SSRF guard rejects S3 hosts on
+          DNS64/NAT64 networks. */}
+      <Image
+        src={player.image || "/bugsbunny-square-1.png"}
+        alt={player.username}
+        className="h-[100px] w-[150px] object-cover"
+        width={150}
+        height={100}
+        unoptimized
+      />
     </div>
   );
 };

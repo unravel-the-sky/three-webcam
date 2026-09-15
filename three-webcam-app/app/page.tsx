@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import AppWrapper from "./components/client/AppWrapper";
-import ChannelWrapper from "./components/client/ChanellWrapper";
+import ChannelWrapper from "./components/client/ChannelWrapper";
 
 export default function Home() {
   return (

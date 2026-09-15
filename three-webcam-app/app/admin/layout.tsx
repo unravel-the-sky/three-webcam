@@ -1,16 +1,9 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Webcam demo - admin panel",
-  description: "",
+  title: "Three Webcam - big screen",
 };
 
-const activeLinkClass = "bg-muted text-primary";
-
-export default function AdminPageLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return <div className="min-h-screen w-full">{children}</div>;
 }

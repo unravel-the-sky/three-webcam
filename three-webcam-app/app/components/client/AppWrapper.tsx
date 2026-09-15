@@ -2,21 +2,9 @@
 
 import { submitForm } from "@/app/serverActions/fileUpload";
 import { deletePlayerById } from "@/app/serverActions/player";
+import { setLocalPlayer, useLocalPlayer } from "@/app/store/localPlayer";
 import useUserStore from "@/app/store/userStore";
 import { CHANNEL_NAME } from "@/app/utils";
-import { Button } from "@/components/ui/button";
-import { Player } from "@prisma/client";
-import { useChannel } from "ably/react";
-import {
-  ArrowBigDown,
-  ArrowBigLeft,
-  ArrowBigRight,
-  ArrowBigUp,
-  Bomb,
-} from "lucide-react";
-import { useEffect, useRef, useState, useTransition } from "react";
-import SplashScreen from "./SplashScreen";
-import TakePhoto from "./TakePhoto";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,119 +16,78 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { useChannel } from "ably/react";
+import {
+  ArrowBigDown,
+  ArrowBigLeft,
+  ArrowBigRight,
+  ArrowBigUp,
+  Bomb,
+} from "lucide-react";
+import { useState, useTransition } from "react";
 import ConfettiExplosion from "react-confetti-explosion";
-import usePlayerStore from "@/app/store/playerStore";
-
-const dataURIToBlob = (dataURI: string) => {
-  const splitDataURI = dataURI.split(",");
-  const byteString =
-    splitDataURI[0].indexOf("base64") >= 0
-      ? atob(splitDataURI[1])
-      : decodeURI(splitDataURI[1]);
-  const mimeString = splitDataURI[0].split(":")[1].split(";")[0];
-
-  const ia = new Uint8Array(byteString.length);
-  for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
-
-  return new Blob([ia], { type: mimeString });
-};
-
-const maxJumps = 200;
-const cooldownTime = 2000;
+import SplashScreen from "./SplashScreen";
+import TakePhoto from "./TakePhoto";
 
 export type JumpDirection = "left" | "up" | "right" | "down" | "jump";
 
+const dataURIToBlob = (dataURI: string) => {
+  const [header, data] = dataURI.split(",");
+  const byteString = header.includes("base64") ? atob(data) : decodeURI(data);
+  const mimeString = header.split(":")[1].split(";")[0];
+
+  const bytes = new Uint8Array(byteString.length);
+  for (let i = 0; i < byteString.length; i++) bytes[i] = byteString.charCodeAt(i);
+
+  return new Blob([bytes], { type: mimeString });
+};
+
+/**
+ * The phone side of the demo: sign up (name, colour, selfie), then a d-pad
+ * that publishes moves for this player's ball over Ably.
+ */
 export default function AppWrapper() {
   const [step, setStep] = useState(1);
-  const [userId, setUserId] = useState("");
-  const [username, setUsername] = useState("");
-  const [color, setColor] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  const [jumpCount, setJumpCount] = useState(0);
   const [isCooldown, setIsCooldown] = useState(false);
   const [winner, setWinner] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
-  const userStore = useUserStore();
-  const { user, setUser } = userStore;
+  // undefined until hydrated, null when this phone hasn't signed up yet
+  const player = useLocalPlayer();
+  const userId = player?.id ?? "";
 
-  const { data } = usePlayerStore();
-
-  const handleNext = () => {
-    setStep(step + 1);
-  };
+  const { user, setUser } = useUserStore();
 
   const { publish } = useChannel(CHANNEL_NAME);
-  const handleJumpPlayer = (direction: JumpDirection) => {
-    console.log("handle jump player is called");
 
+  useChannel(CHANNEL_NAME, "winner", (message) => {
+    if (message.data.playerId === userId) setWinner(true);
+  });
+
+  // The admin freezes the controls while the show is on but the game hasn't started.
+  useChannel(CHANNEL_NAME, "isGameOn", (message) => {
+    setIsCooldown(Boolean(message.data.val));
+  });
+
+  const handleMove = (direction: JumpDirection) => {
     publish("jump", { playerId: userId, direction });
   };
 
-  const handleStopPlayer = (direction: JumpDirection) => {
-    console.log("stop player is sending for userId: ", userId);
-    publish("stop", { playerId: userId, direction });
-  };
+  const handleUpload = () => {
+    if (!user.image) return;
 
-  useChannel(CHANNEL_NAME, "winner", (message) => {
-    console.log("winner happened!");
-    const { data } = message;
-    const winnerId = data.playerId as string;
-    if (winnerId === userId) {
-      console.log("connngratulatu");
-      setWinner(true);
-    }
-  });
+    const formData = new FormData();
+    formData.append("username", user.username);
+    formData.append("color", user.color);
+    formData.append("image", dataURIToBlob(user.image));
 
-  useChannel(CHANNEL_NAME, "isGameOn", (message) => {
-    console.log("isGameOn happened!");
-    const { data } = message;
-    const val = data.val;
-    setIsCooldown(val);
-  });
-
-  const [isPending, startTransition] = useTransition();
-
-  const resetUser = () => {
-    setLoading(true);
-
-    const userId = localStorage.getItem("userId");
-    if (userId) setUserId(userId);
-
-    const username = localStorage.getItem("username");
-    if (username) setUsername(username);
-
-    const color = localStorage.getItem("userColor");
-    if (color) setColor(`bg-[${color}] w-24 h-8`);
-
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    resetUser();
-  }, []);
-
-  const handleUpload = async () => {
-    if (user.image) {
-      const formData = new FormData();
-      formData.append("username", user.username);
-      formData.append("color", user.color);
-
-      const imageAsFile = dataURIToBlob(user.image);
-      formData.append("image", imageAsFile);
-
-      startTransition(async () => {
-        const res = (await submitForm(formData)) as Player | undefined;
-        if (res) {
-          localStorage.setItem("userId", res.id);
-          localStorage.setItem("username", res.username);
-          localStorage.setItem("userColor", res.color);
-          publish("newPlayer", { player: res });
-          setStep(1);
-          resetUser();
-        }
-      });
-    }
+    startTransition(async () => {
+      const created = await submitForm(formData);
+      publish("newPlayer", { player: created });
+      setLocalPlayer({ id: created.id, username: created.username, color: created.color });
+      setStep(1);
+    });
   };
 
   const handleRespawn = () => {
@@ -151,191 +98,117 @@ export default function AppWrapper() {
     try {
       await deletePlayerById(userId);
     } catch (err) {
-      console.error("err : ", err);
+      console.error("[deletePlayer]", err);
     } finally {
       publish("deletePlayer", { playerId: userId });
-      localStorage.removeItem("userId");
-      localStorage.removeItem("username");
-      localStorage.removeItem("userColor");
-      setUserId("");
-      setUsername("");
-      setColor("");
-      setUser({
-        color: "",
-        username: "",
-        image: "",
-      });
+      setLocalPlayer(null);
+      setUser({ color: "", username: "", image: "" });
     }
   };
 
-  if (loading) return <div>loading..</div>;
+  if (player === undefined) return <div>loading..</div>;
 
-  return (
-    <div className="flex items-center justify-center flex-col gap-2 overflow-y-hidden">
-      {userId ? (
-        <div className=" flex flex-col gap-4 items-center relative">
-          <h4>hey {username}</h4>
-          <div className={color}></div>
-          {/* {isCooldown && (
-            <p className="animate-ping duration-1000 text-sm absolute top-16">
-              Cooldown pls!
-            </p>
-          )} */}
-          <div className="mt-12 flex flex-col gap-4">
-            {winner && (
-              <>
-                <div className="animate-bounce fixed top-2 justify-center flex w-full">
-                  WELLDONE!!
-                </div>
-                <ConfettiExplosion onComplete={() => setWinner(false)} />
-              </>
-            )}
-            <div className="flex w-full justify-center">
-              <PlayerButton
-                direction="up"
-                onJumpPlayer={handleJumpPlayer}
-                onStop={handleStopPlayer}
-                isCooldown={isCooldown}
-              />
-            </div>
-            <div className="flex gap-4 items-center">
-              <PlayerButton
-                direction="left"
-                onJumpPlayer={handleJumpPlayer}
-                onStop={handleStopPlayer}
-                isCooldown={isCooldown}
-              />
-              <PlayerButton
-                direction="jump"
-                onJumpPlayer={handleJumpPlayer}
-                onStop={handleStopPlayer}
-                isCooldown={isCooldown}
-              />
-              <PlayerButton
-                direction="right"
-                onJumpPlayer={handleJumpPlayer}
-                onStop={handleStopPlayer}
-                isCooldown={isCooldown}
-              />
-            </div>
-            <div className="flex w-full justify-center">
-              <PlayerButton
-                direction="down"
-                onJumpPlayer={handleJumpPlayer}
-                onStop={handleStopPlayer}
-                isCooldown={isCooldown}
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-16 mt-12">
-            <Button
-              onClick={handleRespawn}
-              className="px-4 py-4 shadow-lg text-lg select-none"
-              disabled={isCooldown}
-            >
-              respawn!
-            </Button>
-
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant={"destructive"}
-                  className="px-4 py-4 shadow-lg text-lg"
-                >
-                  delete player!
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>omg fr?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    this will delete your user
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>nah</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-[#1b3b64]"
-                    onClick={handleReset}
-                  >
-                    yez
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white p-8 rounded-lg shadow-lg w-full">
+  if (!player) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 overflow-y-hidden">
+        <div className="w-full rounded-lg bg-white p-8 shadow-lg">
           {isPending ? (
             <div>loading..</div>
           ) : (
             <>
-              {step === 1 && <SplashScreen onNext={handleNext} />}
+              {step === 1 && <SplashScreen onNext={() => setStep(2)} />}
               {step === 2 && <TakePhoto onNext={handleUpload} />}
             </>
           )}
         </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative flex flex-col items-center gap-4">
+      <h4>hey {player.username}</h4>
+      <div className="h-8 w-24 rounded" style={{ backgroundColor: player.color }} />
+
+      <div className="mt-12 flex flex-col gap-4">
+        {winner && (
+          <>
+            <div className="fixed top-2 flex w-full animate-bounce justify-center">
+              WELLDONE!!
+            </div>
+            <ConfettiExplosion onComplete={() => setWinner(false)} />
+          </>
+        )}
+        <div className="flex w-full justify-center">
+          <PlayerButton direction="up" onMove={handleMove} disabled={isCooldown} />
+        </div>
+        <div className="flex items-center gap-4">
+          <PlayerButton direction="left" onMove={handleMove} disabled={isCooldown} />
+          <PlayerButton direction="jump" onMove={handleMove} disabled={isCooldown} />
+          <PlayerButton direction="right" onMove={handleMove} disabled={isCooldown} />
+        </div>
+        <div className="flex w-full justify-center">
+          <PlayerButton direction="down" onMove={handleMove} disabled={isCooldown} />
+        </div>
+      </div>
+
+      <div className="mt-12 flex flex-col gap-16">
+        <Button
+          onClick={handleRespawn}
+          className="select-none px-4 py-4 text-lg shadow-lg"
+          disabled={isCooldown}
+        >
+          respawn!
+        </Button>
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" className="px-4 py-4 text-lg shadow-lg">
+              delete player!
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>omg fr?</AlertDialogTitle>
+              <AlertDialogDescription>this will delete your user</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>nah</AlertDialogCancel>
+              <AlertDialogAction className="bg-[#1b3b64]" onClick={handleReset}>
+                yez
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </div>
   );
 }
 
+const icons: Record<JumpDirection, React.ReactNode> = {
+  left: <ArrowBigLeft size={40} />,
+  right: <ArrowBigRight size={40} />,
+  up: <ArrowBigUp size={40} />,
+  down: <ArrowBigDown size={40} />,
+  jump: <Bomb size={40} />,
+};
+
 const PlayerButton = ({
   direction,
-  isCooldown,
-  onJumpPlayer,
-  onStop,
+  disabled,
+  onMove,
 }: {
   direction: JumpDirection;
-  isCooldown: boolean;
-  onJumpPlayer: (direction: JumpDirection) => void;
-  onStop: (direction: JumpDirection) => void;
-}) => {
-  const intervalIdRef = useRef<any>(null);
-  // Start the repeated action when the button is pressed
-  const handleMouseDown = () => {
-    if (direction === "jump") {
-      onJumpPlayer(direction);
-      return;
-    }
-    if (!intervalIdRef.current) {
-      intervalIdRef.current = setInterval(() => onJumpPlayer(direction), 100); // Adjust interval time as needed
-    }
-  };
-
-  // Stop the repeated action when the button is released or mouse leaves the button
-  const handleMouseUp = () => {
-    clearInterval(intervalIdRef.current);
-    intervalIdRef.current = null;
-    onStop(direction);
-  };
-
-  // If mouse leaves the button while still pressed, stop the repeated action
-  const handleMouseLeave = () => {
-    clearInterval(intervalIdRef.current);
-    intervalIdRef.current = null;
-    onStop(direction);
-  };
-
-  return (
-    <div>
-      {/* <div className="text-sm">jump left</div> */}
-      <Button
-        variant={"blue"}
-        onClick={() => onJumpPlayer(direction)}
-        // onMouseDown={handleMouseDown}
-        // onMouseUp={handleMouseUp}
-        // onMouseLeave={handleMouseLeave}
-        className="shadow-lg text-lg w-fit h-fit rounded-full"
-        disabled={isCooldown}
-      >
-        {direction === "left" && <ArrowBigLeft size={40} />}
-        {direction === "right" && <ArrowBigRight size={40} />}
-        {direction === "up" && <ArrowBigUp size={40} />}
-        {direction === "down" && <ArrowBigDown size={40} />}
-        {direction === "jump" && <Bomb size={40} />}
-      </Button>
-    </div>
-  );
-};
+  disabled: boolean;
+  onMove: (direction: JumpDirection) => void;
+}) => (
+  <Button
+    variant="blue"
+    onClick={() => onMove(direction)}
+    className="h-fit w-fit rounded-full text-lg shadow-lg"
+    disabled={disabled}
+    aria-label={direction}
+  >
+    {icons[direction]}
+  </Button>
+);

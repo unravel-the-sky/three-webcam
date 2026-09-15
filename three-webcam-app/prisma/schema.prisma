@@ -1,40 +1,22 @@
-// schema.prisma
-
 generator client {
-    provider = "prisma-client-js"
+    provider = "prisma-client"
+    output   = "../lib/generated/prisma"
 }
 
 datasource db {
-    provider  = "postgresql"
-    url       = env("POSTGRES_PRISMA_URL") // uses connection pooling
-    directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+    provider = "postgresql"
 }
 
+/// A participant: picked a name + colour, took a selfie, controls a ball on the big screen.
 model Player {
     id        String   @id @default(cuid())
     username  String   @default("")
     color     String   @default("")
     image     String   @default("")
     createdAt DateTime @default(now())
-    isOnline  Boolean  @default(false)
-    Jump      Jump[]
 }
 
-model Jump {
-    id        String   @id @default(cuid())
-    createdAt DateTime @default(now())
-    player    Player   @relation(fields: [playerId], references: [id])
-    isJumping Boolean
-    playerId  String
-}
-
-model MailTemplate {
-    id        String   @id @default(cuid())
-    template  String   @default("")
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    udpatedBy String   @default("")
-}
+// --- next-auth (Google sign-in for the /admin display) ---
 
 model Account {
     id                String  @id @default(cuid())
